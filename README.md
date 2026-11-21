@@ -17,7 +17,7 @@ npm run icons      # PWA-Icons aus assets/logo-mark.svg erzeugen (braucht Playwr
 
 ## Deployment (GitHub Pages)
 
-Jeder Push auf `main` baut und veröffentlicht die App über GitHub Actions.
+Jeder Push auf `main` (bzw. den aktuellen Entwicklungs-Branch) baut und veröffentlicht die App über GitHub Actions.
 Einmalig nötig: **Settings → Pages → Source: „GitHub Actions“**.
 
 URL danach: `https://<user>.github.io/f1tippspiel/`
