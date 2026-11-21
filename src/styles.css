@@ -181,7 +181,7 @@ input, select {
 .team-cadillac { --team: #c8a24a; }
 
 /* Schmale Displays */
-html, body { overflow-x: hidden; }
+body { overflow-x: clip; }
 .player-switch { min-width: 0; }
 .player-switch .chip { max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 380px) {
