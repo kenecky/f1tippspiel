@@ -1,0 +1,95 @@
+import { useEffect, useState } from 'react';
+import { ActivePlayerContext, loadActivePlayer, storeActivePlayer, useOnline } from './hooks';
+import { href, useRoute } from './router';
+import { usePlayers, useSeason, useUnreadCount } from './data/queries';
+import { syncSeason, ensureDrivers } from './data/sync';
+import { db } from './data/db';
+import type { PlayerId } from './domain/types';
+import { HomePage } from './pages/HomePage';
+import { CalendarPage } from './pages/CalendarPage';
+import { RacePage } from './pages/RacePage';
+import { TipPage } from './pages/TipPage';
+import { ResultPage } from './pages/ResultPage';
+import { StandingsPage } from './pages/StandingsPage';
+import { RadioPage } from './pages/RadioPage';
+import { SeasonTipsPage } from './pages/SeasonTipsPage';
+import { MorePage } from './pages/MorePage';
+
+const logo = `${import.meta.env.BASE_URL}favicon.svg`;
+
+export function App() {
+  const [me, setMeState] = useState<PlayerId>(loadActivePlayer);
+  const setMe = (p: PlayerId) => {
+    setMeState(p);
+    storeActivePlayer(p);
+  };
+  const route = useRoute();
+  const season = useSeason();
+  const players = usePlayers();
+  const online = useOnline();
+  const unread = useUnreadCount(me);
+
+  // Beim ersten Start (oder wenn noch kein Kalender da ist) automatisch laden
+  useEffect(() => {
+    if (!season) return;
+    (async () => {
+      const synced = await db.meta.get(`calendarSyncedAt:${season}`);
+      const stale = !synced || Date.now() - new Date(synced.value as string).getTime() > 12 * 3600_000;
+      if (stale && navigator.onLine) await syncSeason(season);
+      else await ensureDrivers(season);
+    })();
+  }, [season]);
+
+  const [page, ...params] = route;
+  let content;
+  switch (page ?? '') {
+    case '': content = <HomePage />; break;
+    case 'kalender': content = <CalendarPage />; break;
+    case 'rennen': content = <RacePage raceId={params[0]} />; break;
+    case 'tipp': content = <TipPage sessionId={params[0]} />; break;
+    case 'ergebnis': content = <ResultPage sessionId={params[0]} />; break;
+    case 'wertung': content = <StandingsPage />; break;
+    case 'funk': content = <RadioPage />; break;
+    case 'saison': content = <SeasonTipsPage />; break;
+    case 'mehr': content = <MorePage />; break;
+    default: content = <HomePage />;
+  }
+
+  const nav = [
+    { key: '', label: 'Start', icon: '🏠' },
+    { key: 'kalender', label: 'Kalender', icon: '📅' },
+    { key: 'wertung', label: 'Wertung', icon: '🏆' },
+    { key: 'funk', label: 'Funk', icon: '📻', badge: unread },
+    { key: 'mehr', label: 'Mehr', icon: '⚙️' },
+  ];
+  const activeNav = ['rennen', 'tipp', 'ergebnis'].includes(page ?? '') ? 'kalender' : page === 'saison' ? 'mehr' : page ?? '';
+
+  return (
+    <ActivePlayerContext.Provider value={{ me, setMe }}>
+      <header className="topbar">
+        <a href={href()} className="brand">
+          <img src={logo} alt="" width={32} height={32} />
+          <span>LIGHTS OUT</span>
+        </a>
+        <div className="player-switch" role="group" aria-label="Aktiver Spieler">
+          {(players ?? []).map((p) => (
+            <button key={p.id} className={`chip ${p.id} ${me === p.id ? 'active' : ''}`} onClick={() => setMe(p.id)}>
+              {p.name}
+            </button>
+          ))}
+        </div>
+      </header>
+      {!online && <div className="offline-banner">Offline – gespeicherte Daten werden angezeigt</div>}
+      <main className="content">{content}</main>
+      <nav className="bottomnav">
+        {nav.map((n) => (
+          <a key={n.key} href={href(...(n.key ? [n.key] : []))} className={activeNav === n.key ? 'active' : ''}>
+            <span className="icon" aria-hidden>{n.icon}</span>
+            <span>{n.label}</span>
+            {!!n.badge && <span className="badge">{n.badge}</span>}
+          </a>
+        ))}
+      </nav>
+    </ActivePlayerContext.Provider>
+  );
+}

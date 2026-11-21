@@ -1,0 +1,116 @@
+# Lights Out – Konzept
+
+> Arbeitstitel. Ein Formel-1-Tippduell für zwei Spieler als installierbare, offline-fähige PWA.
+
+## 1. Ziel
+
+Zwei Spieler tippen Qualifying-, Sprint- und Rennergebnisse, sammeln Punkte und spielen die Saison gegeneinander.
+Fokus zunächst: **Android-Smartphone (Samsung, Chrome)**. Tablet/Desktop später.
+
+## 2. Spielregeln
+
+### Tipps pro Wochenende
+
+| Session            | Getippt wird | Multiplikator |
+|--------------------|--------------|---------------|
+| Qualifying         | Top 10       | ×1            |
+| Sprint-Qualifying  | Top 10       | ×1            |
+| Sprint             | Top 8        | ×1            |
+| Rennen             | Top 10       | **×2**        |
+
+### Punkte (für jede Session)
+
+- **1 Punkt** pro getipptem Fahrer, der tatsächlich in den Top 10 bzw. Top 8 landet (Position egal)
+- **+2 Punkte**, wenn zusätzlich die **Position exakt** stimmt (also 3 Punkte für einen exakten Treffer)
+- Das Rennen zählt doppelt.
+
+Maximal: Qualifying/Sprint-Qualifying 30 · Sprint 24 · Rennen 60 + 6 Bonus.
+
+### Bonusfragen (nur Rennen)
+
+| Frage              | Punkte* |
+|--------------------|---------|
+| Schnellste Runde   | 2       |
+| Driver of the Day  | 2       |
+| Safety Car ja/nein (VSC zählt als SC) | 2 |
+
+### Saisontipps (vor dem ersten Saison-Event)
+
+| Tipp                      | Punkte* |
+|---------------------------|---------|
+| Fahrer-Weltmeister        | 10      |
+| Konstrukteurs-Weltmeister | 10      |
+
+\* Noch festzulegen: Die Bonus- und Saisonpunkte sind Vorschläge. Sie stehen zentral in `src/domain/rules.ts`.
+
+### Fairness
+
+- **Tippschluss = Sessionbeginn.** Danach werden Tipps abgelehnt.
+- Die Tipps der anderen Person sind **erst nach Tippschluss sichtbar**. Vorher sieht man nur, *ob* getippt wurde.
+- Saisontipps sperren mit der ersten Session der Saison.
+
+## 3. Funktionen
+
+- **Start:** Punktestand, nächste Session mit Countdown, Tippstatus beider Spieler
+- **Kalender:** Saison mit allen Wochenenden, Sprint-Wochenenden markiert
+- **Tippen:** Plätze antippen und Fahrer wählen, Teamfarben, Bonusfragen beim Rennen
+- **Auswertung:** Vergleich Ergebnis ↔ Tipp A ↔ Tipp B, Punkte pro Session
+- **Wertung:** Gesamtstand, Wochenendsiege, Punkte pro Wochenende
+- **Boxenfunk:** kurze Nachrichten an die andere Person, inkl. Schnellfunk-Buttons
+- **Saisontipps:** Weltmeister Fahrer und Team
+- **Offline:** App-Shell über den Service Worker, Daten in IndexedDB
+
+## 4. Daten
+
+- **Kalender, Fahrer, Teams, Ergebnisse:** [Jolpica F1 API](https://github.com/jolpica/jolpica-f1) (Nachfolger von Ergast), kostenlos und ohne Key
+- **Nicht über die API verfügbar, wird manuell eingetragen:** Ergebnis des Sprint-Qualifyings, Driver of the Day, SC/VSC
+- **Fallback:** Fahrerfeld 2026 ist hinterlegt, falls die API noch keine Daten liefert
+
+## 5. Architektur
+
+```
+src/
+  domain/      Reine Logik ohne UI und Speicher → zieht später 1:1 auf den Server
+    rules.ts     alle Spielregeln/Punktwerte
+    scoring.ts   Punkteberechnung (+ Tests)
+    lock.ts      Sperrlogik (Tippschluss)
+    types.ts
+  data/
+    repository.ts       Interface für alle schreibenden Operationen
+    localRepository.ts  Testphase: IndexedDB (Dexie), prüft die Sperre wie später der Server
+    queries.ts          lesende Hooks (live-aktualisierend)
+    f1api.ts            Jolpica-Client
+    sync.ts             Kalender/Ergebnisse laden
+    fallback.ts         Fallback-Fahrerfeld, Test-Wochenende
+  components/  UI-Bausteine (DriverPicker, BonusEditor, …)
+  pages/       Seiten (Hash-Routing → läuft auf GitHub Pages)
+```
+
+**Stack:** Vite · React · TypeScript · Dexie (IndexedDB) · vite-plugin-pwa (Workbox) · Vitest
+
+## 6. Phasen
+
+### Phase 1 – Testphase (jetzt)
+- Alle Daten lokal im Browser (IndexedDB)
+- Beide Spieler auf **einem** Gerät über den Umschalter oben rechts
+- Sperre wird lokal geprüft. Das ist zum Testen gedacht, die Handyuhr könnte man verstellen.
+- Hosting: GitHub Pages
+
+### Phase 2 – Server & Datenbank
+- Eigener Server + Datenbank, **Login pro Spieler**
+- `ApiRepository` implementiert das bestehende `Repository`-Interface, die UI bleibt unverändert
+- `domain/lock.ts` und `domain/scoring.ts` laufen **serverseitig mit Serverzeit**. Die Sperre ist dann manipulationssicher.
+- Server holt Ergebnisse automatisch (Cron) und verteilt die Tipps erst nach Tippschluss
+- Offline: Lesen aus dem lokalen Cache. Offline gespeicherte Tipps zählen erst, wenn der Server sie **vor** dem Sessionbeginn angenommen hat.
+- Push-Benachrichtigungen (z. B. „Qualy in 1 h – du hast noch nicht getippt“, neue Boxenfunk-Nachricht)
+
+### Später
+- Tablet/Desktop-Layout
+- Finaler App-Name und Logo-Feinschliff
+- Statistiken (Trefferquote, bester Fahrer-Tipper, Saisonverlauf als Diagramm)
+
+## 7. Branding
+
+- **Arbeitstitel:** Lights Out
+- **Logo:** Startampel mit fünf roten Lichtern, darunter zwei Helme im Duell (rot ↔ türkis = Spielerfarben)
+- Quelle: `assets/logo-mark.svg` → Icons erzeugen mit `npm run icons`

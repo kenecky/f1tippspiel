@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="110" fill="#15151e"/>
+  <defs>
+    <radialGradient id="light" cx="40%" cy="35%" r="65%">
+      <stop offset="0" stop-color="#ff6a5c"/>
+      <stop offset="0.55" stop-color="#e10600"/>
+      <stop offset="1" stop-color="#8a0400"/>
+    </radialGradient>
+    <linearGradient id="visor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a3f55"/>
+      <stop offset="1" stop-color="#0b0c12"/>
+    </linearGradient>
+    <symbol id="helmet" viewBox="0 0 120 90">
+      <path d="M10 70 C4 36 28 6 64 6 C95 6 115 27 117 52 L117 60 C117 71 108 79 97 80 L30 82 C18 82 12 78 10 70 Z" fill="currentColor"/>
+      <path d="M11 63 C40 68 80 68 117 62 L117 68 C80 75 40 75 12 70 Z" fill="#fff" opacity="0.92"/>
+      <path d="M62 30 C80 25 104 27 114 35 C116.5 41 117 47 116 52 L72 52 C62 52 56 41 62 30 Z" fill="url(#visor)"/>
+      <path d="M68 33 C82 30 98 31 108 36" stroke="#fff" stroke-opacity="0.4" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M22 26 C30 16 42 11 54 10" stroke="#fff" stroke-opacity="0.22" stroke-width="4" fill="none" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+  <!-- Startampel -->
+  <rect x="62" y="96" width="388" height="112" rx="28" fill="#0b0b10" stroke="#2c2c3a" stroke-width="6"/>
+  <rect x="246" y="60" width="20" height="38" fill="#2c2c3a"/>
+  <g fill="url(#light)">
+    <circle cx="112" cy="152" r="30"/>
+    <circle cx="184" cy="152" r="30"/>
+    <circle cx="256" cy="152" r="30"/>
+    <circle cx="328" cy="152" r="30"/>
+    <circle cx="400" cy="152" r="30"/>
+  </g>
+  <!-- Zwei Helme im Duell -->
+  <use href="#helmet" x="30" y="258" width="214" height="160" color="#e10600"/>
+  <g transform="translate(512 0) scale(-1 1)">
+    <use href="#helmet" x="30" y="258" width="214" height="160" color="#00d2be"/>
+  </g>
+</svg>
