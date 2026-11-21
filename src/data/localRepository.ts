@@ -49,6 +49,15 @@ export class LocalRepository implements Repository {
     });
   }
 
+  async setDriverVisibility(season: number, driverId: string, visible: boolean | undefined) {
+    const key = `driverOverrides:${season}`;
+    const current = ((await db.meta.get(key))?.value as Record<string, boolean> | undefined) ?? {};
+    const next = { ...current };
+    if (visible === undefined) delete next[driverId];
+    else next[driverId] = visible;
+    await db.meta.put({ key, value: next });
+  }
+
   async saveTip(input: Omit<Tip, 'id' | 'updatedAt'>): Promise<Tip> {
     const session = await findSession(input.sessionId);
     if (!session) throw new Error('Session nicht gefunden.');

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Card } from '../components/ui';
-import { useCalendarSyncedAt, usePlayers, useSeason } from '../data/queries';
+import { Card, sortDrivers } from '../components/ui';
+import { useAllDrivers, useCalendarSyncedAt, usePlayers, useSeason, useTeams } from '../data/queries';
 import { repo } from '../data/localRepository';
 import { db } from '../data/db';
 import { demoRace } from '../data/fallback';
@@ -46,7 +46,7 @@ export function MorePage() {
         <h3>Spieler</h3>
         {names.map((p, i) => (
           <label key={p.id} className="field">
-            <span>Spieler {i + 1}</span>
+            <span>{i === 0 ? 'Dein Name' : 'Gegner:in'}</span>
             <input value={p.name} maxLength={16} onChange={(e) => setNames(names.map((n) => (n.id === p.id ? { ...n, name: e.target.value } : n)))} />
           </label>
         ))}
@@ -64,6 +64,8 @@ export function MorePage() {
         <p className="small muted">Kalender-Stand: {synced ? fmtDateTime(synced) : 'noch nie geladen'}</p>
         <button className="btn" disabled={busy} onClick={() => run(async () => (await syncSeason(season)).message)}>🔄 Kalender & Fahrer neu laden</button>
       </Card>
+
+      <DriversCard season={season} />
 
       <Card>
         <h3>🧪 Testphase</h3>
@@ -101,5 +103,50 @@ export function MorePage() {
       </Card>
       <p className="small muted center">Lights Out v{__APP_VERSION__} · Testphase (lokale Daten)</p>
     </div>
+  );
+}
+
+function DriversCard({ season }: { season: number }) {
+  const drivers = useAllDrivers(season);
+  const teams = useTeams(season);
+  const [open, setOpen] = useState(false);
+  if (!drivers) return null;
+
+  const visible = drivers.filter((d) => d.visible).length;
+  const reserves = drivers.filter((d) => d.regular === false).length;
+  const teamName = (id?: string) => teams?.find((t) => t.id === id)?.name ?? '–';
+
+  return (
+    <Card>
+      <button className="row plain" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <h3>🏎️ Fahrer ({visible} aktiv)</h3>
+        <span className="muted">{open ? '▲' : '▼'}</span>
+      </button>
+      <p className="small muted">
+        Ersatzfahrer werden automatisch erkannt (letzte 3 Rennen, 2 Fahrer pro Team)
+        {reserves > 0 ? ` – ${reserves} ausgeblendet` : ''}. Hier kannst du Fahrer von Hand ein- oder ausblenden.
+      </p>
+      {open && (
+        <ul className="driver-admin">
+          {sortDrivers(drivers).map((d) => (
+            <li key={d.id} className={`team-${d.teamId ?? 'none'} ${d.visible ? '' : 'off'}`}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={d.visible}
+                  onChange={(e) => repo.setDriverVisibility(season, d.id, e.target.checked === (d.regular !== false) ? undefined : e.target.checked)}
+                />
+                <span className="driver"><b>{d.code}</b> {d.firstName} {d.lastName}</span>
+              </label>
+              <small className="muted">
+                {teamName(d.teamId)}
+                {d.regular === false && ' · Ersatz'}
+                {d.overridden && ' · manuell'}
+              </small>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }

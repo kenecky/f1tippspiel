@@ -21,6 +21,8 @@ export interface Repository {
   getSeason(): Promise<number>;
   setSeason(season: number): Promise<void>;
   saveCalendar(season: number, races: Race[], drivers: Driver[], teams: Team[]): Promise<void>;
+  /** Fahrer manuell ein-/ausblenden; undefined = automatische Erkennung */
+  setDriverVisibility(season: number, driverId: string, visible: boolean | undefined): Promise<void>;
 
   // Tipps
   saveTip(tip: Omit<Tip, 'id' | 'updatedAt'>): Promise<Tip>;

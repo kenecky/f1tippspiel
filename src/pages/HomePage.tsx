@@ -23,7 +23,7 @@ export function HomePage() {
   const next = upcoming[0];
   const tipped = (sessionId: string, p: string) => tips?.some((t) => t.id === `${sessionId}:${p}` && t.order.some(Boolean));
   const name = (id: string) => players.find((p) => p.id === id)?.name ?? id;
-  const missing = upcoming.filter(({ session }) => !tipped(session.id, me)).slice(0, 3);
+  const missing = upcoming.slice(1).filter(({ session }) => !tipped(session.id, me)).slice(0, 3);
 
   return (
     <div className="stack">
@@ -65,7 +65,7 @@ export function HomePage() {
         </Card>
       )}
 
-      {missing.length > 1 && (
+      {missing.length > 0 && (
         <Card>
           <h3>Noch nicht getippt</h3>
           <ul className="list">

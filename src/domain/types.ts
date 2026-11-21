@@ -35,6 +35,8 @@ export interface Driver {
   firstName: string;
   lastName: string;
   teamId?: string;
+  /** false = Ersatzfahrer (automatisch erkannt) */
+  regular?: boolean;
 }
 
 export interface Team {

@@ -29,11 +29,28 @@ export function useRace(raceId?: string): Race | undefined {
   return useLiveQuery(async () => (raceId ? await db.races.get(raceId) : undefined), [raceId]);
 }
 
+export type DriverWithVisibility = Driver & { visible: boolean; overridden: boolean };
+
+/** Alle Fahrer inkl. Ersatzfahrer, mit berechneter Sichtbarkeit */
+export function useAllDrivers(season?: number): DriverWithVisibility[] | undefined {
+  return useLiveQuery(async () => {
+    if (!season) return [];
+    const [drivers, overrides] = await Promise.all([
+      db.drivers.where('season').equals(season).toArray(),
+      db.meta.get(`driverOverrides:${season}`).then((e) => (e?.value as Record<string, boolean> | undefined) ?? {}),
+    ]);
+    return drivers.map((d) => ({
+      ...d,
+      overridden: d.id in overrides,
+      visible: overrides[d.id] ?? d.regular !== false,
+    }));
+  }, [season]);
+}
+
+/** Nur sichtbare Fahrer (Stammfahrer + manuell eingeblendete) – für Tipp-Auswahl */
 export function useDrivers(season?: number): Driver[] | undefined {
-  return useLiveQuery(
-    async () => (season ? await db.drivers.where('season').equals(season).toArray() : []),
-    [season],
-  );
+  const all = useAllDrivers(season);
+  return all?.filter((d) => d.visible);
 }
 
 export function useTeams(season?: number): Team[] | undefined {

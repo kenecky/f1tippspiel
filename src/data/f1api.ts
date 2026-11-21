@@ -1,4 +1,8 @@
 import type { BonusAnswers, Driver, Race, Session, SessionType, Team } from '../domain/types';
+import { selectLineup, type ResultEntry } from '../domain/lineup';
+
+/** Anzahl der letzten Rennen, aus denen das Stammfahrer-Feld ermittelt wird */
+const LINEUP_ROUNDS = 3;
 
 /**
  * Jolpica API (Nachfolger von Ergast) – kostenlos, ohne Key.
@@ -63,24 +67,46 @@ export async function fetchCalendar(season: number): Promise<Race[]> {
   });
 }
 
-export async function fetchDriversAndTeams(season: number): Promise<{ drivers: Driver[]; teams: Team[] }> {
+/**
+ * Fahrer & Teams einer Saison. Ersatzfahrer werden anhand der letzten
+ * 3 Rennergebnisse erkannt und als `regular: false` markiert.
+ */
+export async function fetchDriversAndTeams(
+  season: number,
+  races: Race[],
+): Promise<{ drivers: Driver[]; teams: Team[] }> {
   const [d, c] = await Promise.all([
     get<{ MRData: { DriverTable: { Drivers: ApiDriver[] } } }>(`${season}/drivers.json`),
     get<{ MRData: { ConstructorTable: { Constructors: ApiConstructor[] } } }>(`${season}/constructors.json`),
   ]);
 
-  // Teamzuordnung aus dem letzten Rennergebnis (falls vorhanden)
-  const teamOf = new Map<string, string>();
-  try {
-    const last = await get<{ MRData: { RaceTable: { Races: { Results: ApiResultRow[] }[] } } }>(
-      `${season}/last/results.json`,
+  const now = Date.now();
+  const lastRounds = races
+    .filter((r) => r.round < 900 && r.sessions.some((s) => s.type === 'race' && new Date(s.start).getTime() < now))
+    .map((r) => r.round)
+    .sort((a, b) => b - a)
+    .slice(0, LINEUP_ROUNDS);
+
+  const settled = await Promise.allSettled(
+    lastRounds.map((round) =>
+      get<{ MRData: { RaceTable: { Races: { Results: ApiResultRow[] }[] } } }>(`${season}/${round}/results.json`),
+    ),
+  );
+  const rounds: ResultEntry[][] = settled
+    .map((res) => (res.status === 'fulfilled' ? res.value.MRData.RaceTable.Races[0]?.Results ?? [] : []))
+    .filter((rows) => rows.length > 0)
+    .map((rows) =>
+      rows
+        .filter((row) => row.Constructor)
+        .map((row) => ({ driverId: row.Driver.driverId, teamId: row.Constructor!.constructorId })),
     );
-    for (const row of last.MRData.RaceTable.Races[0]?.Results ?? []) {
-      if (row.Constructor) teamOf.set(row.Driver.driverId, row.Constructor.constructorId);
-    }
-  } catch {
-    /* vor Saisonbeginn gibt es noch keine Ergebnisse */
-  }
+
+  // Vor dem ersten Rennen gibt es keine Ergebnisse → alle gemeldeten Fahrer gelten als Stammfahrer
+  const lineup = rounds.length ? selectLineup(rounds) : undefined;
+  const lastTeam = new Map<string, string>();
+  [...rounds].reverse().forEach((entries) => entries.forEach((e) => lastTeam.set(e.driverId, e.teamId)));
+
+  const activeTeams = lineup ? new Set(lineup.values()) : undefined;
 
   return {
     drivers: d.MRData.DriverTable.Drivers.map((x) => ({
@@ -90,9 +116,12 @@ export async function fetchDriversAndTeams(season: number): Promise<{ drivers: D
       number: x.permanentNumber ?? '',
       firstName: x.givenName,
       lastName: x.familyName,
-      teamId: teamOf.get(x.driverId),
+      teamId: lineup?.get(x.driverId) ?? lastTeam.get(x.driverId),
+      regular: lineup ? lineup.has(x.driverId) : true,
     })),
-    teams: c.MRData.ConstructorTable.Constructors.map((x) => ({ id: x.constructorId, season, name: x.name })),
+    teams: c.MRData.ConstructorTable.Constructors
+      .filter((x) => !activeTeams || activeTeams.has(x.constructorId))
+      .map((x) => ({ id: x.constructorId, season, name: x.name })),
   };
 }
 

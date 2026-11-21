@@ -12,33 +12,16 @@ export function useNow(intervalMs = 1000): Date {
 }
 
 /**
- * Aktiver Spieler. Testphase: Umschalter in der App (beide auf einem Gerät möglich).
+ * Der Spieler dieses Geräts. Testphase: fest Spieler 1.
  * Später: kommt aus dem Login.
  */
-export const ActivePlayerContext = createContext<{ me: PlayerId; setMe: (p: PlayerId) => void }>({
-  me: 'p1',
-  setMe: () => {},
-});
+export const ME: PlayerId = 'p1';
+
+export const ActivePlayerContext = createContext<{ me: PlayerId }>({ me: ME });
 
 export const useMe = () => useContext(ActivePlayerContext);
 
 export const other = (p: PlayerId): PlayerId => (p === 'p1' ? 'p2' : 'p1');
-
-export function loadActivePlayer(): PlayerId {
-  try {
-    return localStorage.getItem('activePlayer') === 'p2' ? 'p2' : 'p1';
-  } catch {
-    return 'p1';
-  }
-}
-
-export function storeActivePlayer(p: PlayerId) {
-  try {
-    localStorage.setItem('activePlayer', p);
-  } catch {
-    /* egal */
-  }
-}
 
 export function useOnline(): boolean {
   const [online, setOnline] = useState(navigator.onLine);

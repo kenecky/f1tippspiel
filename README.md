@@ -30,4 +30,4 @@ URL danach: `https://<user>.github.io/f1tippspiel/`
 ## Testen
 
 Unter **Mehr → Test-Wochenende anlegen** entsteht ein Wochenende, dessen Sessions in 2, 5, 10 und 30 Minuten starten.
-So lassen sich Tippen, Sperre und Auswertung direkt ausprobieren. Oben rechts wechselt man zwischen den Spielern.
+So lassen sich Tippen, Sperre und Auswertung direkt ausprobieren.

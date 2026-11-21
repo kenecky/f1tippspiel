@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
-import { ActivePlayerContext, loadActivePlayer, storeActivePlayer, useOnline } from './hooks';
+import { useEffect } from 'react';
+import { ActivePlayerContext, ME, useOnline } from './hooks';
 import { href, useRoute } from './router';
 import { usePlayers, useSeason, useUnreadCount } from './data/queries';
 import { syncSeason, ensureDrivers } from './data/sync';
 import { db } from './data/db';
-import type { PlayerId } from './domain/types';
 import { HomePage } from './pages/HomePage';
 import { CalendarPage } from './pages/CalendarPage';
 import { RacePage } from './pages/RacePage';
@@ -17,12 +16,11 @@ import { MorePage } from './pages/MorePage';
 
 const logo = `${import.meta.env.BASE_URL}favicon.svg`;
 
+/** Erhöhen, wenn gespeicherte Stammdaten neu geladen werden müssen */
+const DATA_VERSION = 2;
+
 export function App() {
-  const [me, setMeState] = useState<PlayerId>(loadActivePlayer);
-  const setMe = (p: PlayerId) => {
-    setMeState(p);
-    storeActivePlayer(p);
-  };
+  const me = ME;
   const route = useRoute();
   const season = useSeason();
   const players = usePlayers();
@@ -34,8 +32,13 @@ export function App() {
     if (!season) return;
     (async () => {
       const synced = await db.meta.get(`calendarSyncedAt:${season}`);
-      const stale = !synced || Date.now() - new Date(synced.value as string).getTime() > 12 * 3600_000;
-      if (stale && navigator.onLine) await syncSeason(season);
+      const version = (await db.meta.get('dataVersion'))?.value as number | undefined;
+      const stale =
+        !synced || (version ?? 0) < DATA_VERSION || Date.now() - new Date(synced.value as string).getTime() > 12 * 3600_000;
+      if (stale && navigator.onLine) {
+        const res = await syncSeason(season);
+        if (res.ok) await db.meta.put({ key: 'dataVersion', value: DATA_VERSION });
+      }
       else await ensureDrivers(season);
     })();
   }, [season]);
@@ -65,19 +68,13 @@ export function App() {
   const activeNav = ['rennen', 'tipp', 'ergebnis'].includes(page ?? '') ? 'kalender' : page === 'saison' ? 'mehr' : page ?? '';
 
   return (
-    <ActivePlayerContext.Provider value={{ me, setMe }}>
+    <ActivePlayerContext.Provider value={{ me }}>
       <header className="topbar">
         <a href={href()} className="brand">
           <img src={logo} alt="" width={32} height={32} />
           <span>LIGHTS OUT</span>
         </a>
-        <div className="player-switch" role="group" aria-label="Aktiver Spieler">
-          {(players ?? []).map((p) => (
-            <button key={p.id} className={`chip ${p.id} ${me === p.id ? 'active' : ''}`} onClick={() => setMe(p.id)}>
-              {p.name}
-            </button>
-          ))}
-        </div>
+        <a href={href('mehr')} className={`chip ${me} active`}>{players?.find((p) => p.id === me)?.name ?? ''}</a>
       </header>
       {!online && <div className="offline-banner">Offline – gespeicherte Daten werden angezeigt</div>}
       <main className="content">{content}</main>

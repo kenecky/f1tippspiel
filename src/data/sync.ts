@@ -13,7 +13,7 @@ export interface SyncReport {
 export async function syncSeason(season: number): Promise<SyncReport> {
   try {
     const races = await fetchCalendar(season);
-    let { drivers, teams } = await fetchDriversAndTeams(season).catch(() => ({ drivers: [], teams: [] }));
+    let { drivers, teams } = await fetchDriversAndTeams(season, races).catch(() => ({ drivers: [], teams: [] }));
     let usedFallback = false;
     const haveDrivers = await db.drivers.where('season').equals(season).count();
     if (!drivers.length && !haveDrivers) {
@@ -22,9 +22,12 @@ export async function syncSeason(season: number): Promise<SyncReport> {
       usedFallback = true;
     }
     await repo.saveCalendar(season, races, drivers, teams);
+    const reserves = drivers.filter((d) => d.regular === false).length;
     return {
       ok: true,
-      message: `${races.length} Rennen geladen${usedFallback ? ' (Fahrerliste: Fallback)' : ''}.`,
+      message:
+        `${races.length} Rennen geladen` +
+        (usedFallback ? ' (Fahrerliste: Fallback).' : `, ${drivers.length - reserves} Stammfahrer` + (reserves ? ` (${reserves} Ersatzfahrer ausgeblendet).` : '.')),
     };
   } catch (e) {
     await ensureDrivers(season);

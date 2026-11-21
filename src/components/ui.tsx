@@ -33,6 +33,10 @@ export function BackLink({ to, label = 'Zurück' }: { to: string; label?: string
   return <a className="back" href={to}>‹ {label}</a>;
 }
 
-export function sortDrivers(drivers: Driver[]): Driver[] {
-  return [...drivers].sort((a, b) => (a.teamId ?? 'zz').localeCompare(b.teamId ?? 'zz') || a.lastName.localeCompare(b.lastName));
+export function sortDrivers<T extends Driver>(drivers: T[]): T[] {
+  // Ersatzfahrer ans Ende, sonst nach Team und Name
+  const reserve = (d: Driver) => (d.regular === false ? 1 : 0);
+  return [...drivers].sort(
+    (a, b) => reserve(a) - reserve(b) || (a.teamId ?? 'zz').localeCompare(b.teamId ?? 'zz') || a.lastName.localeCompare(b.lastName),
+  );
 }

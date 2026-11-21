@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { BackLink, Card } from '../components/ui';
 import { DriverPicker } from '../components/DriverPicker';
 import { BonusEditor } from '../components/BonusEditor';
-import { useDrivers, useRace, useResult } from '../data/queries';
+import { useAllDrivers, useRace, useResult } from '../data/queries';
 import { repo } from '../data/localRepository';
 import { syncResult } from '../data/sync';
 import { isSessionLocked } from '../domain/lock';
@@ -16,7 +16,7 @@ import { raceIdOf } from './TipPage';
 export function ResultPage({ sessionId }: { sessionId?: string }) {
   const race = useRace(sessionId ? raceIdOf(sessionId) : undefined);
   const session = race?.sessions.find((s) => s.id === sessionId);
-  const drivers = useDrivers(race?.season);
+  const drivers = useAllDrivers(race?.season);
   const result = useResult(sessionId);
   const now = useNow(5000);
 

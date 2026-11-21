@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { BackLink, Card, Countdown, DriverTag, LockBadge, PlayerDot } from '../components/ui';
 import { DriverPicker } from '../components/DriverPicker';
 import { BonusEditor } from '../components/BonusEditor';
-import { useDrivers, usePlayers, useRace, useResult, useTipsForSession } from '../data/queries';
+import { useAllDrivers, useDrivers, usePlayers, useRace, useResult, useTipsForSession } from '../data/queries';
 import { repo } from '../data/localRepository';
 import { isSessionLocked, TipLockedError } from '../domain/lock';
 import { RULES, SESSION_LABEL } from '../domain/rules';
@@ -18,13 +18,14 @@ export function TipPage({ sessionId }: { sessionId?: string }) {
   const race = useRace(sessionId ? raceIdOf(sessionId) : undefined);
   const session = race?.sessions.find((s) => s.id === sessionId);
   const drivers = useDrivers(race?.season);
+  const allDrivers = useAllDrivers(race?.season);
   const tips = useTipsForSession(sessionId);
   const result = useResult(sessionId);
   const players = usePlayers();
   const { me } = useMe();
   const now = useNow(1000);
 
-  if (!race || !session || !drivers || !tips || !players) return <p className="muted">Lade…</p>;
+  if (!race || !session || !drivers || !allDrivers || !tips || !players) return <p className="muted">Lade…</p>;
 
   const locked = isSessionLocked(session, now);
   const depth = RULES.tipDepth[session.type];
@@ -46,7 +47,7 @@ export function TipPage({ sessionId }: { sessionId?: string }) {
       </p>
 
       {locked ? (
-        <LockedView depth={depth} drivers={drivers} tips={tips} players={players} result={result} type={session.type} sessionId={session.id} />
+        <LockedView depth={depth} drivers={allDrivers} tips={tips} players={players} result={result} type={session.type} sessionId={session.id} />
       ) : (
         <>
           <TipEditor

@@ -28,7 +28,7 @@ Maximal: Qualifying/Sprint-Qualifying 30 · Sprint 24 · Rennen 60 + 6 Bonus.
 
 ### Bonusfragen (nur Rennen)
 
-| Frage              | Punkte* |
+| Frage              | Punkte |
 |--------------------|---------|
 | Schnellste Runde   | 2       |
 | Driver of the Day  | 2       |
@@ -36,12 +36,14 @@ Maximal: Qualifying/Sprint-Qualifying 30 · Sprint 24 · Rennen 60 + 6 Bonus.
 
 ### Saisontipps (vor dem ersten Saison-Event)
 
-| Tipp                      | Punkte* |
+| Tipp                      | Punkte |
 |---------------------------|---------|
 | Fahrer-Weltmeister        | 10      |
 | Konstrukteurs-Weltmeister | 10      |
 
-\* Noch festzulegen: Die Bonus- und Saisonpunkte sind Vorschläge. Sie stehen zentral in `src/domain/rules.ts`.
+Alle Punktwerte stehen zentral in `src/domain/rules.ts`.
+
+**Manuell einzutragen:** Ergebnis des Sprint-Qualifyings, Driver of the Day, SC/VSC.
 
 ### Fairness
 
@@ -53,7 +55,7 @@ Maximal: Qualifying/Sprint-Qualifying 30 · Sprint 24 · Rennen 60 + 6 Bonus.
 
 - **Start:** Punktestand, nächste Session mit Countdown, Tippstatus beider Spieler
 - **Kalender:** Saison mit allen Wochenenden, Sprint-Wochenenden markiert
-- **Tippen:** Plätze antippen und Fahrer wählen, Teamfarben, Bonusfragen beim Rennen
+- **Tippen:** Plätze antippen und Fahrer wählen (nur Stammfahrer), Teamfarben, Bonusfragen beim Rennen
 - **Auswertung:** Vergleich Ergebnis ↔ Tipp A ↔ Tipp B, Punkte pro Session
 - **Wertung:** Gesamtstand, Wochenendsiege, Punkte pro Wochenende
 - **Boxenfunk:** kurze Nachrichten an die andere Person, inkl. Schnellfunk-Buttons
@@ -65,6 +67,7 @@ Maximal: Qualifying/Sprint-Qualifying 30 · Sprint 24 · Rennen 60 + 6 Bonus.
 - **Kalender, Fahrer, Teams, Ergebnisse:** [Jolpica F1 API](https://github.com/jolpica/jolpica-f1) (Nachfolger von Ergast), kostenlos und ohne Key
 - **Nicht über die API verfügbar, wird manuell eingetragen:** Ergebnis des Sprint-Qualifyings, Driver of the Day, SC/VSC
 - **Fallback:** Fahrerfeld 2026 ist hinterlegt, falls die API noch keine Daten liefert
+- **Ersatzfahrer** werden automatisch ausgeblendet: Aus den letzten 3 Rennergebnissen werden pro Team die 2 Fahrer mit den meisten Einsätzen genommen (bei Gleichstand gewinnt, wer zuletzt gefahren ist). Unter *Mehr → Fahrer* lässt sich das per Hand überschreiben. Beim manuellen Eintragen eines Ergebnisses stehen alle Fahrer zur Wahl, auch Ersatzfahrer.
 
 ## 5. Architektur
 
@@ -92,7 +95,7 @@ src/
 
 ### Phase 1 – Testphase (jetzt)
 - Alle Daten lokal im Browser (IndexedDB)
-- Beide Spieler auf **einem** Gerät über den Umschalter oben rechts
+- Jedes Gerät tippt nur für **sich selbst** (fest Spieler 1). Die andere Person erscheint erst mit dem Server.
 - Sperre wird lokal geprüft. Das ist zum Testen gedacht, die Handyuhr könnte man verstellen.
 - Hosting: GitHub Pages
 
