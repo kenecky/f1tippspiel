@@ -61,3 +61,33 @@ export async function syncResult(race: Race, session: Session): Promise<SyncRepo
     return { ok: false, message: `Fehler: ${(e as Error).message}` };
   }
 }
+
+/**
+ * „Aktualisieren“ auf der Startseite: Kalender/Fahrer neu laden,
+ * fehlende Ergebnisse vergangener Sessions holen, App-Update prüfen.
+ */
+export async function refreshAll(season: number): Promise<string> {
+  if (!navigator.onLine) return 'Offline – keine Aktualisierung möglich.';
+  const report = await syncSeason(season);
+  const races = await db.races.where('season').equals(season).toArray();
+  const now = Date.now();
+  const resultIds = new Set((await db.results.toArray()).map((r) => r.sessionId));
+  const missing = races
+    .filter((r) => r.round < 900)
+    .flatMap((race) => race.sessions.map((session) => ({ race, session })))
+    .filter(({ session }) => session.type !== 'sprintQuali' && new Date(session.start).getTime() < now && !resultIds.has(session.id))
+    .sort((a, b) => b.session.start.localeCompare(a.session.start))
+    .slice(0, 6);
+  let loaded = 0;
+  for (const { race, session } of missing) {
+    const r = await syncResult(race, session);
+    if (r.ok) loaded++;
+  }
+  try {
+    await (await navigator.serviceWorker?.getRegistration())?.update();
+  } catch {
+    /* egal */
+  }
+  if (!report.ok) return report.message;
+  return `Aktualisiert${loaded ? ` – ${loaded} neue${loaded === 1 ? 's' : ''} Ergebnis${loaded === 1 ? '' : 'se'}` : ''}.`;
+}

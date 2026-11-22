@@ -3,6 +3,7 @@ import { useCalendarSyncedAt, useRaces, useSeason } from '../data/queries';
 import { fmtDate, fmtDateTime, flag } from '../format';
 import { useNow } from '../hooks';
 import { href } from '../router';
+import { SeasonTipsSection } from './SeasonTipsPage';
 
 export function CalendarPage() {
   const season = useSeason();
@@ -16,7 +17,7 @@ export function CalendarPage() {
 
   return (
     <div className="stack">
-      <h1>Kalender {season}</h1>
+      <h1>Tipps {season}</h1>
       {synced && <p className="muted small">Stand: {fmtDateTime(synced)}</p>}
       {races.length === 0 && (
         <Card><p>Noch kein Kalender geladen. Unter <a href={href('mehr')}>Mehr</a> laden oder Test-Wochenende anlegen.</p></Card>
@@ -40,6 +41,7 @@ export function CalendarPage() {
           );
         })}
       </ul>
+      {season && <SeasonTipsSection season={season} />}
     </div>
   );
 }

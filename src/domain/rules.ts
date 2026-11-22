@@ -27,9 +27,9 @@ export const RULES = {
 
   /** Bonusfragen beim Rennen (werden NICHT verdoppelt) */
   bonusPoints: {
-    fastestLap: 2,
-    driverOfTheDay: 2,
-    safetyCar: 2,
+    fastestLap: 5,
+    driverOfTheDay: 10,
+    safetyCar: 3,
   },
 
   /** Saisontipps */

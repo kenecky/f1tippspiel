@@ -107,6 +107,7 @@ export async function fetchDriversAndTeams(
   [...rounds].reverse().forEach((entries) => entries.forEach((e) => lastTeam.set(e.driverId, e.teamId)));
 
   const activeTeams = lineup ? new Set(lineup.values()) : undefined;
+  const standings = await fetchStandings(season);
 
   return {
     drivers: d.MRData.DriverTable.Drivers.map((x) => ({
@@ -118,11 +119,45 @@ export async function fetchDriversAndTeams(
       lastName: x.familyName,
       teamId: lineup?.get(x.driverId) ?? lastTeam.get(x.driverId),
       regular: lineup ? lineup.has(x.driverId) : true,
+      standing: standings.drivers.get(x.driverId),
     })),
     teams: c.MRData.ConstructorTable.Constructors
       .filter((x) => !activeTeams || activeTeams.has(x.constructorId))
-      .map((x) => ({ id: x.constructorId, season, name: x.name })),
+      .map((x) => ({ id: x.constructorId, season, name: x.name, standing: standings.teams.get(x.constructorId) })),
   };
+}
+
+interface ApiStandingsList {
+  ConstructorStandings?: { position?: string; Constructor: { constructorId: string } }[];
+  DriverStandings?: { position?: string; Driver: { driverId: string } }[];
+}
+
+/**
+ * WM-Stand für die Sortierung. Vor dem ersten Rennen: Endstand der Vorsaison.
+ */
+export async function fetchStandings(season: number): Promise<{ teams: Map<string, number>; drivers: Map<string, number> }> {
+  const load = async (year: number) => {
+    const [c, d] = await Promise.all([
+      get<{ MRData: { StandingsTable: { StandingsLists: ApiStandingsList[] } } }>(`${year}/constructorstandings.json`),
+      get<{ MRData: { StandingsTable: { StandingsLists: ApiStandingsList[] } } }>(`${year}/driverstandings.json`),
+    ]);
+    const teams = new Map<string, number>();
+    const drivers = new Map<string, number>();
+    (c.MRData.StandingsTable.StandingsLists[0]?.ConstructorStandings ?? []).forEach((x, i) =>
+      teams.set(x.Constructor.constructorId, Number(x.position ?? i + 1)),
+    );
+    (d.MRData.StandingsTable.StandingsLists[0]?.DriverStandings ?? []).forEach((x, i) =>
+      drivers.set(x.Driver.driverId, Number(x.position ?? i + 1)),
+    );
+    return { teams, drivers };
+  };
+  try {
+    const current = await load(season);
+    if (current.teams.size) return current;
+    return await load(season - 1);
+  } catch {
+    return { teams: new Map(), drivers: new Map() };
+  }
 }
 
 interface ApiResultRow {

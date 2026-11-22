@@ -1,4 +1,4 @@
-import { BackLink, Card, Countdown, LockBadge, PlayerDot } from '../components/ui';
+import { BackLink, Card, LockBadge, PlayerDot } from '../components/ui';
 import { useAllResults, useAllTips, usePlayers, useRace } from '../data/queries';
 import { isSessionLocked } from '../domain/lock';
 import { scoreTip } from '../domain/scoring';
@@ -17,7 +17,7 @@ export function RacePage({ raceId }: { raceId?: string }) {
 
   return (
     <div className="stack">
-      <BackLink to={href('kalender')} label="Kalender" />
+      <BackLink to={href('kalender')} label="Tipps" />
       <h1>{flag(race.country)} {race.name}</h1>
       <p className="muted">{race.circuit}, {race.locality}</p>
 
@@ -28,9 +28,9 @@ export function RacePage({ raceId }: { raceId?: string }) {
           <Card key={s.id}>
             <div className="row">
               <h3>{SESSION_LABEL[s.type]} <small className="muted">Top {RULES.tipDepth[s.type]}{s.type === 'race' ? ' · x2' : ''}</small></h3>
-              <LockBadge locked={locked} />
+              <LockBadge locked={locked} until={s.start} />
             </div>
-            <p className="muted">{fmtDateTime(s.start)}{!locked && <> · noch <Countdown to={s.start} /></>}</p>
+            <p className="muted">{fmtDateTime(s.start)}</p>
             <div className="tip-status">
               {players.map((p) => {
                 const tip = tips.find((t) => t.id === `${s.id}:${p.id}`);

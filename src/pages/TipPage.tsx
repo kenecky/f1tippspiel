@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
-import { BackLink, Card, Countdown, DriverTag, LockBadge, PlayerDot } from '../components/ui';
+import { useState } from 'react';
+import { BackLink, Card, DriverTag, LockBadge, PlayerDot, SaveState } from '../components/ui';
 import { DriverPicker } from '../components/DriverPicker';
 import { BonusEditor } from '../components/BonusEditor';
-import { useAllDrivers, useDrivers, usePlayers, useRace, useResult, useTipsForSession } from '../data/queries';
+import { useAllDrivers, useDrivers, usePlayers, useTeams, useRace, useResult, useTipsForSession } from '../data/queries';
 import { repo } from '../data/localRepository';
 import { isSessionLocked, TipLockedError } from '../domain/lock';
 import { RULES, SESSION_LABEL } from '../domain/rules';
 import { maxPoints, scoreTip } from '../domain/scoring';
-import type { BonusAnswers, Driver, Tip } from '../domain/types';
+import type { BonusAnswers, Driver, Team, Tip } from '../domain/types';
 import { fmtDateTime, flag } from '../format';
 import { useMe, useNow } from '../hooks';
 import { href } from '../router';
@@ -19,13 +19,14 @@ export function TipPage({ sessionId }: { sessionId?: string }) {
   const session = race?.sessions.find((s) => s.id === sessionId);
   const drivers = useDrivers(race?.season);
   const allDrivers = useAllDrivers(race?.season);
+  const teams = useTeams(race?.season);
   const tips = useTipsForSession(sessionId);
   const result = useResult(sessionId);
   const players = usePlayers();
   const { me } = useMe();
   const now = useNow(1000);
 
-  if (!race || !session || !drivers || !allDrivers || !tips || !players) return <p className="muted">Lade…</p>;
+  if (!race || !session || !drivers || !allDrivers || !teams || !tips || !players || result === undefined) return <p className="muted">Lade…</p>;
 
   const locked = isSessionLocked(session, now);
   const depth = RULES.tipDepth[session.type];
@@ -35,19 +36,16 @@ export function TipPage({ sessionId }: { sessionId?: string }) {
       <BackLink to={href('rennen', race.id)} label={race.name} />
       <div className="row">
         <h1>{SESSION_LABEL[session.type]}</h1>
-        <LockBadge locked={locked} />
+        <LockBadge locked={locked} until={session.start} />
       </div>
-      <p className="muted">
-        {flag(race.country)} {race.name} · {fmtDateTime(session.start)}
-        {!locked && <> · Tippschluss in <Countdown to={session.start} /></>}
-      </p>
+      <p className="muted">{flag(race.country)} {race.name} · {fmtDateTime(session.start)}</p>
       <p className="small muted">
         Top {depth} tippen · 1 Pkt pro Fahrer in den Top {depth}, +2 bei exakter Position
         {session.type === 'race' && ' · Rennen zählt doppelt'} · max. {maxPoints(session.type)} Pkt
       </p>
 
       {locked ? (
-        <LockedView depth={depth} drivers={allDrivers} tips={tips} players={players} result={result} type={session.type} sessionId={session.id} />
+        <LockedView depth={depth} drivers={allDrivers} tips={tips} players={players} result={result ?? undefined} type={session.type} sessionId={session.id} />
       ) : (
         <>
           <TipEditor
@@ -55,6 +53,7 @@ export function TipPage({ sessionId }: { sessionId?: string }) {
             sessionId={session.id}
             depth={depth}
             drivers={drivers}
+            teams={teams}
             existing={tips.find((t) => t.playerId === me)}
             withBonus={session.type === 'race'}
           />
@@ -73,56 +72,62 @@ export function TipPage({ sessionId }: { sessionId?: string }) {
   );
 }
 
-function TipEditor({ sessionId, depth, drivers, existing, withBonus }: {
-  sessionId: string; depth: number; drivers: Driver[]; existing?: Tip; withBonus: boolean;
+function TipEditor({ sessionId, depth, drivers, teams, existing, withBonus }: {
+  sessionId: string; depth: number; drivers: Driver[]; teams: Team[]; existing?: Tip; withBonus: boolean;
 }) {
   const { me } = useMe();
   const [order, setOrder] = useState<string[]>(existing?.order ?? []);
   const [bonus, setBonus] = useState<BonusAnswers>(existing?.bonus ?? {});
-  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
-  const [dirty, setDirty] = useState(false);
+  const [state, setState] = useState<'idle' | 'saved' | 'error'>(existing ? 'saved' : 'idle');
+  const [error, setError] = useState('');
 
-  // Bestehenden Tipp übernehmen, sobald er geladen ist (nur wenn nicht bearbeitet)
-  useEffect(() => {
-    if (existing && !dirty) {
-      setOrder(existing.order);
-      setBonus(existing.bonus ?? {});
-    }
-  }, [existing, dirty]);
-
-  const filled = order.filter(Boolean).length;
-
-  const save = async () => {
+  // Jede Änderung wird sofort gespeichert (später: an den Server)
+  const persist = async (nextOrder: string[], nextBonus: BonusAnswers) => {
     try {
-      await repo.saveTip({ sessionId, playerId: me, order, bonus: withBonus ? bonus : undefined });
-      setDirty(false);
-      setStatus({ ok: true, text: `Gespeichert (${filled}/${depth}).` });
+      await repo.saveTip({ sessionId, playerId: me, order: nextOrder, bonus: withBonus ? nextBonus : undefined });
+      setState('saved');
+      setError('');
     } catch (e) {
-      setStatus({ ok: false, text: e instanceof TipLockedError ? e.message : `Fehler: ${(e as Error).message}` });
+      setState('error');
+      setError(e instanceof TipLockedError ? e.message : `Fehler: ${(e as Error).message}`);
     }
   };
+
+  const filled = order.filter(Boolean).length;
 
   return (
     <>
       <Card>
         <div className="row">
-          <h3>Dein Tipp</h3>
-          <span className="muted small">{filled}/{depth}</span>
+          <h3>Dein Tipp <span className="muted small">{filled}/{depth}</span></h3>
+          <SaveState state={state} />
         </div>
-        <DriverPicker drivers={drivers} depth={depth} value={order} onChange={(o) => { setOrder(o); setDirty(true); }} />
+        {error && <p className="error small">{error}</p>}
+        <DriverPicker
+          drivers={drivers}
+          teams={teams}
+          depth={depth}
+          value={order}
+          onChange={(o) => {
+            setOrder(o);
+            persist(o, bonus);
+          }}
+        />
       </Card>
       {withBonus && (
         <Card>
           <h3>Bonusfragen</h3>
-          <BonusEditor drivers={drivers} value={bonus} onChange={(b) => { setBonus(b); setDirty(true); }} />
+          <BonusEditor
+            drivers={drivers}
+            teams={teams}
+            value={bonus}
+            onChange={(b) => {
+              setBonus(b);
+              persist(order, b);
+            }}
+          />
         </Card>
       )}
-      <div className="sticky-save">
-        {status && <p className={status.ok ? 'ok' : 'error'}>{status.text}</p>}
-        <button className="btn primary block" onClick={save} disabled={filled === 0}>
-          {dirty || !existing ? 'Tipp speichern' : 'Gespeichert ✓'}
-        </button>
-      </div>
     </>
   );
 }

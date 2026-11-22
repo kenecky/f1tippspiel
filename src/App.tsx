@@ -11,13 +11,12 @@ import { TipPage } from './pages/TipPage';
 import { ResultPage } from './pages/ResultPage';
 import { StandingsPage } from './pages/StandingsPage';
 import { RadioPage } from './pages/RadioPage';
-import { SeasonTipsPage } from './pages/SeasonTipsPage';
 import { MorePage } from './pages/MorePage';
 
 const logo = `${import.meta.env.BASE_URL}favicon.svg`;
 
 /** Erhöhen, wenn gespeicherte Stammdaten neu geladen werden müssen */
-const DATA_VERSION = 2;
+const DATA_VERSION = 3;
 
 export function App() {
   const me = ME;
@@ -53,19 +52,18 @@ export function App() {
     case 'ergebnis': content = <ResultPage sessionId={params[0]} />; break;
     case 'wertung': content = <StandingsPage />; break;
     case 'funk': content = <RadioPage />; break;
-    case 'saison': content = <SeasonTipsPage />; break;
     case 'mehr': content = <MorePage />; break;
     default: content = <HomePage />;
   }
 
   const nav = [
     { key: '', label: 'Start', icon: '🏠' },
-    { key: 'kalender', label: 'Kalender', icon: '📅' },
+    { key: 'kalender', label: 'Tipps', icon: '🏁' },
     { key: 'wertung', label: 'Wertung', icon: '🏆' },
     { key: 'funk', label: 'Funk', icon: '📻', badge: unread },
     { key: 'mehr', label: 'Mehr', icon: '⚙️' },
   ];
-  const activeNav = ['rennen', 'tipp', 'ergebnis'].includes(page ?? '') ? 'kalender' : page === 'saison' ? 'mehr' : page ?? '';
+  const activeNav = ['rennen', 'tipp', 'ergebnis'].includes(page ?? '') ? 'kalender' : page ?? '';
 
   return (
     <ActivePlayerContext.Provider value={{ me }}>

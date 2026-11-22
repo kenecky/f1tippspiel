@@ -1,4 +1,7 @@
+import { useCallback } from 'react';
 import { Card, Countdown, PlayerDot } from '../components/ui';
+import { PullToRefresh } from '../components/PullToRefresh';
+import { refreshAll } from '../data/sync';
 import { useNow, useMe } from '../hooks';
 import { useAllTips, usePlayers, useRaces, useSeason, useStandings } from '../data/queries';
 import { SESSION_LABEL } from '../domain/rules';
@@ -14,6 +17,8 @@ export function HomePage() {
   const { me } = useMe();
   const now = useNow(30_000);
 
+  const refresh = useCallback(() => (season ? refreshAll(season) : Promise.resolve()), [season]);
+
   if (!races || !players) return <p className="muted">Lade…</p>;
 
   const upcoming = races
@@ -27,6 +32,7 @@ export function HomePage() {
 
   return (
     <div className="stack">
+      <PullToRefresh onRefresh={refresh} />
       {standings && (
         <Card className="scoreboard">
           {(['p1', 'p2'] as const).map((p) => (
@@ -68,12 +74,16 @@ export function HomePage() {
       {missing.length > 0 && (
         <Card>
           <h3>Noch nicht getippt</h3>
-          <ul className="list">
+          <ul className="tile-list">
             {missing.map(({ race, session }) => (
               <li key={session.id}>
                 <a href={href('tipp', session.id)}>
-                  <span>{flag(race.country)} {race.name} · {SESSION_LABEL[session.type]}</span>
-                  <span className="muted">{fmtDateTime(session.start)}</span>
+                  <span className="tile-flag">{flag(race.country)}</span>
+                  <span className="tile-text">
+                    <b>{race.name}</b>
+                    <small className="muted">{SESSION_LABEL[session.type]} · {fmtDateTime(session.start)}</small>
+                  </span>
+                  <span className="muted">›</span>
                 </a>
               </li>
             ))}

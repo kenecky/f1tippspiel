@@ -24,15 +24,15 @@ Fokus zunächst: **Android-Smartphone (Samsung, Chrome)**. Tablet/Desktop späte
 - **+2 Punkte**, wenn zusätzlich die **Position exakt** stimmt (also 3 Punkte für einen exakten Treffer)
 - Das Rennen zählt doppelt.
 
-Maximal: Qualifying/Sprint-Qualifying 30 · Sprint 24 · Rennen 60 + 6 Bonus.
+Maximal: Qualifying/Sprint-Qualifying 30 · Sprint 24 · Rennen 60 + 18 Bonus.
 
 ### Bonusfragen (nur Rennen)
 
 | Frage              | Punkte |
 |--------------------|---------|
-| Schnellste Runde   | 2       |
-| Driver of the Day  | 2       |
-| Safety Car ja/nein (VSC zählt als SC) | 2 |
+| Schnellste Runde   | 5      |
+| Driver of the Day  | 10     |
+| Safety Car ja/nein (VSC zählt als SC) | 3 |
 
 ### Saisontipps (vor dem ersten Saison-Event)
 
@@ -53,14 +53,16 @@ Alle Punktwerte stehen zentral in `src/domain/rules.ts`.
 
 ## 3. Funktionen
 
-- **Start:** Punktestand, nächste Session mit Countdown, Tippstatus beider Spieler
-- **Kalender:** Saison mit allen Wochenenden, Sprint-Wochenenden markiert
-- **Tippen:** Plätze antippen und Fahrer wählen (nur Stammfahrer), Teamfarben, Bonusfragen beim Rennen
+- **Start:** Punktestand, nächste Session mit Countdown, Tippstatus beider Spieler; Aktualisieren durch Runterwischen (nur hier, nur im oberen Drittel)
+- **Tipps:** Saison mit allen Wochenenden, Sprint-Wochenenden markiert, unten die Saisontipps
+- **Tippen:** Plätze antippen und Fahrer wählen (nur Stammfahrer, nach Team-WM sortiert, zweispaltig je Team); Plätze per Drag & Drop (lange drücken) verschieben
+- **Auto-Save:** Alle Eingaben werden sofort gespeichert, es gibt keine Speichern-Buttons, Teamfarben, Bonusfragen beim Rennen
 - **Auswertung:** Vergleich Ergebnis ↔ Tipp A ↔ Tipp B, Punkte pro Session
 - **Wertung:** Gesamtstand, Wochenendsiege, Punkte pro Wochenende
 - **Boxenfunk:** kurze Nachrichten an die andere Person, inkl. Schnellfunk-Buttons
-- **Saisontipps:** Weltmeister Fahrer und Team
 - **Offline:** App-Shell über den Service Worker, Daten in IndexedDB
+
+- **Bedienung:** Kein Zoom, kein natives Pull-to-Refresh
 
 ## 4. Daten
 

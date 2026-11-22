@@ -55,7 +55,12 @@ export function useDrivers(season?: number): Driver[] | undefined {
 
 export function useTeams(season?: number): Team[] | undefined {
   return useLiveQuery(
-    async () => (season ? await db.teams.where('season').equals(season).sortBy('name') : []),
+    async () =>
+      season
+        ? (await db.teams.where('season').equals(season).toArray()).sort(
+            (a, b) => (a.standing ?? 99) - (b.standing ?? 99) || a.name.localeCompare(b.name),
+          )
+        : [],
     [season],
   );
 }
@@ -71,8 +76,9 @@ export function useAllTips(): Tip[] | undefined {
   return useLiveQuery(() => db.tips.toArray(), []);
 }
 
-export function useResult(sessionId?: string): SessionResult | undefined {
-  return useLiveQuery(async () => (sessionId ? await db.results.get(sessionId) : undefined), [sessionId]);
+/** undefined = lädt noch, null = kein Ergebnis vorhanden */
+export function useResult(sessionId?: string): SessionResult | null | undefined {
+  return useLiveQuery(async () => (sessionId ? ((await db.results.get(sessionId)) ?? null) : null), [sessionId]);
 }
 
 export function useAllResults(): SessionResult[] | undefined {

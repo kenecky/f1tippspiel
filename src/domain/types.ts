@@ -37,12 +37,16 @@ export interface Driver {
   teamId?: string;
   /** false = Ersatzfahrer (automatisch erkannt) */
   regular?: boolean;
+  /** Platz in der Fahrer-WM (für Sortierung) */
+  standing?: number;
 }
 
 export interface Team {
   id: string;
   season: number;
   name: string;
+  /** Platz in der Konstrukteurs-WM (für Sortierung) */
+  standing?: number;
 }
 
 /** Bonusfragen – nur beim Rennen */

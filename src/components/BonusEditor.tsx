@@ -1,36 +1,40 @@
-import type { BonusAnswers, Driver } from '../domain/types';
+import type { BonusAnswers, Driver, Team } from '../domain/types';
 import { RULES } from '../domain/rules';
-import { sortDrivers } from './ui';
+import { DriverSelect } from './SheetSelect';
 
 interface Props {
   drivers: Driver[];
+  teams: Team[];
   value: BonusAnswers;
   disabled?: boolean;
   onChange: (b: BonusAnswers) => void;
 }
 
-export function BonusEditor({ drivers, value, disabled, onChange }: Props) {
-  const sorted = sortDrivers(drivers);
-  const select = (key: 'fastestLap' | 'driverOfTheDay', label: string, pts: number) => (
-    <label className="field">
-      <span>{label} <small className="muted">+{pts}</small></span>
-      <select
-        value={value[key] ?? ''}
-        disabled={disabled}
-        onChange={(e) => onChange({ ...value, [key]: e.target.value || undefined })}
-      >
-        <option value="">– wählen –</option>
-        {sorted.map((d) => (
-          <option key={d.id} value={d.id}>{d.code} · {d.firstName} {d.lastName}</option>
-        ))}
-      </select>
-    </label>
-  );
-
+export function BonusEditor({ drivers, teams, value, disabled, onChange }: Props) {
   return (
     <div className="bonus">
-      {select('fastestLap', 'Schnellste Runde', RULES.bonusPoints.fastestLap)}
-      {select('driverOfTheDay', 'Driver of the Day', RULES.bonusPoints.driverOfTheDay)}
+      <div className="field">
+        <span>Schnellste Runde <small className="muted">+{RULES.bonusPoints.fastestLap}</small></span>
+        <DriverSelect
+          title="Schnellste Runde"
+          drivers={drivers}
+          teams={teams}
+          value={value.fastestLap}
+          disabled={disabled}
+          onChange={(v) => onChange({ ...value, fastestLap: v })}
+        />
+      </div>
+      <div className="field">
+        <span>Driver of the Day <small className="muted">+{RULES.bonusPoints.driverOfTheDay}</small></span>
+        <DriverSelect
+          title="Driver of the Day"
+          drivers={drivers}
+          teams={teams}
+          value={value.driverOfTheDay}
+          disabled={disabled}
+          onChange={(v) => onChange({ ...value, driverOfTheDay: v })}
+        />
+      </div>
       <div className="field">
         <span>Safety Car / VSC? <small className="muted">+{RULES.bonusPoints.safetyCar}</small></span>
         <div className="segmented">

@@ -30,10 +30,11 @@ const GRID: [string, string, string, string, string, string][] = [
   ['bottas', 'BOT', '77', 'Valtteri', 'Bottas', 'cadillac'],
 ];
 
+/** Reihenfolge = Konstrukteurs-WM 2025 (Cadillac neu) */
 const TEAMS: [string, string][] = [
-  ['red_bull', 'Red Bull'], ['mclaren', 'McLaren'], ['ferrari', 'Ferrari'], ['mercedes', 'Mercedes'],
-  ['aston_martin', 'Aston Martin'], ['williams', 'Williams'], ['alpine', 'Alpine'], ['haas', 'Haas'],
-  ['rb', 'Racing Bulls'], ['audi', 'Audi'], ['cadillac', 'Cadillac'],
+  ['mclaren', 'McLaren'], ['mercedes', 'Mercedes'], ['red_bull', 'Red Bull'], ['ferrari', 'Ferrari'],
+  ['williams', 'Williams'], ['rb', 'Racing Bulls'], ['aston_martin', 'Aston Martin'], ['haas', 'Haas'],
+  ['audi', 'Audi'], ['alpine', 'Alpine'], ['cadillac', 'Cadillac'],
 ];
 
 export function fallbackDrivers(season: number): Driver[] {
@@ -43,7 +44,7 @@ export function fallbackDrivers(season: number): Driver[] {
 }
 
 export function fallbackTeams(season: number): Team[] {
-  return TEAMS.map(([id, name]) => ({ id, season, name }));
+  return TEAMS.map(([id, name], i) => ({ id, season, name, standing: i + 1 }));
 }
 
 /**

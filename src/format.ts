@@ -25,3 +25,15 @@ const FLAGS: Record<string, string> = {
   Singapore: '🇸🇬', Mexico: '🇲🇽', Brazil: '🇧🇷', Qatar: '🇶🇦', UAE: '🇦🇪', 'Abu Dhabi': '🇦🇪',
 };
 export const flag = (country: string) => FLAGS[country] ?? '🏁';
+
+/** Laufende Uhr: „2 T 03:12:45“ bzw. „3:12:45“ */
+export function fmtClock(ms: number): string {
+  if (ms <= 0) return '0:00:00';
+  const s = Math.floor(ms / 1000);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d > 0 ? `${d} T ` : ''}${d > 0 ? pad(h) : h}:${pad(m)}:${pad(sec)}`;
+}

@@ -1,16 +1,18 @@
-import { useEffect, useState } from 'react';
-import { BackLink, Card, Countdown, LockBadge, PlayerDot, sortDrivers } from '../components/ui';
-import { useDrivers, usePlayers, useRaces, useSeason, useSeasonResult, useSeasonTips, useTeams } from '../data/queries';
+import { useState } from 'react';
+import { Card, LockBadge, PlayerDot, SaveState } from '../components/ui';
+import { DriverSelect, TeamSelect } from '../components/SheetSelect';
+import { useDrivers, useAllDrivers, usePlayers, useRaces, useSeasonResult, useSeasonTips, useTeams } from '../data/queries';
 import { repo } from '../data/localRepository';
 import { isSeasonLocked, seasonLockTime } from '../domain/lock';
 import { RULES } from '../domain/rules';
+import type { SeasonTip } from '../domain/types';
 import { useMe, useNow } from '../hooks';
-import { href } from '../router';
 
-export function SeasonTipsPage() {
-  const season = useSeason();
+/** Saisontipps (Weltmeister) – eingebettet unten auf der Tipps-Seite */
+export function SeasonTipsSection({ season }: { season: number }) {
   const races = useRaces(season)?.filter((r) => r.round < 900);
   const drivers = useDrivers(season);
+  const allDrivers = useAllDrivers(season);
   const teams = useTeams(season);
   const tips = useSeasonTips(season);
   const result = useSeasonResult(season);
@@ -18,63 +20,32 @@ export function SeasonTipsPage() {
   const { me } = useMe();
   const now = useNow(1000);
 
-  const mine = tips?.find((t) => t.playerId === me);
-  const [driverId, setDriverId] = useState('');
-  const [teamId, setTeamId] = useState('');
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  useEffect(() => {
-    setDriverId(mine?.championDriverId ?? '');
-    setTeamId(mine?.championTeamId ?? '');
-  }, [mine?.championDriverId, mine?.championTeamId, me]);
-
-  if (!season || !races || !drivers || !teams || !tips || !players) return <p className="muted">Lade…</p>;
+  if (!races || !drivers || !allDrivers || !teams || !tips || !players) return null;
 
   const locked = isSeasonLocked(races, now);
   const lockAt = seasonLockTime(races);
-  const dName = (id?: string) => drivers.find((d) => d.id === id)?.lastName ?? '—';
+  const dName = (id?: string) => allDrivers.find((d) => d.id === id)?.lastName ?? '—';
   const tName = (id?: string) => teams.find((t) => t.id === id)?.name ?? '—';
 
-  const save = async () => {
-    try {
-      await repo.saveSeasonTip({ season, playerId: me, championDriverId: driverId || undefined, championTeamId: teamId || undefined });
-      setMsg({ ok: true, text: 'Saisontipp gespeichert.' });
-    } catch (e) {
-      setMsg({ ok: false, text: (e as Error).message });
-    }
-  };
-
   return (
-    <div className="stack">
-      <BackLink to={href('mehr')} label="Mehr" />
+    <section className="stack" id="saisontipps">
       <div className="row">
-        <h1>Saisontipps {season}</h1>
-        <LockBadge locked={locked} />
+        <h2>🏆 Saisontipps</h2>
+        <LockBadge locked={locked} until={lockAt?.toISOString()} />
       </div>
       <p className="small muted">
-        Weltmeister Fahrer +{RULES.seasonPoints.championDriver} · Weltmeister Team +{RULES.seasonPoints.championTeam}
-        {lockAt && !locked && <> · Tippschluss in <Countdown to={lockAt.toISOString()} /></>}
+        Fahrer-Weltmeister +{RULES.seasonPoints.championDriver} · Team-Weltmeister +{RULES.seasonPoints.championTeam}
+        {!locked && ' · Die Tipps der anderen Person siehst du ab Saisonstart.'}
       </p>
 
       {!locked ? (
-        <Card>
-          <label className="field">
-            <span>🏆 Fahrer-Weltmeister</span>
-            <select value={driverId} onChange={(e) => setDriverId(e.target.value)}>
-              <option value="">– wählen –</option>
-              {sortDrivers(drivers).map((d) => <option key={d.id} value={d.id}>{d.firstName} {d.lastName}</option>)}
-            </select>
-          </label>
-          <label className="field">
-            <span>🏭 Konstrukteurs-Weltmeister</span>
-            <select value={teamId} onChange={(e) => setTeamId(e.target.value)}>
-              <option value="">– wählen –</option>
-              {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          </label>
-          {msg && <p className={msg.ok ? 'ok' : 'error'}>{msg.text}</p>}
-          <button className="btn primary block" onClick={save}>Speichern</button>
-          <p className="small muted">Die Tipps der anderen Person siehst du ab Saisonstart.</p>
-        </Card>
+        <MySeasonTip
+          key={`${season}:${me}:${tips.find((t) => t.playerId === me)?.id ?? 'new'}`}
+          season={season}
+          existing={tips.find((t) => t.playerId === me)}
+          drivers={drivers}
+          teams={teams}
+        />
       ) : (
         <>
           <Card>
@@ -96,23 +67,60 @@ export function SeasonTipsPage() {
           </Card>
           <Card>
             <h3>Tatsächliche Weltmeister</h3>
-            <label className="field">
+            <div className="field">
               <span>Fahrer</span>
-              <select value={result?.championDriverId ?? ''} onChange={(e) => repo.saveSeasonResult({ ...result, season, championDriverId: e.target.value || undefined })}>
-                <option value="">– noch offen –</option>
-                {sortDrivers(drivers).map((d) => <option key={d.id} value={d.id}>{d.firstName} {d.lastName}</option>)}
-              </select>
-            </label>
-            <label className="field">
+              <DriverSelect title="Fahrer-Weltmeister" drivers={drivers} teams={teams} value={result?.championDriverId}
+                onChange={(v) => repo.saveSeasonResult({ ...result, season, championDriverId: v })} />
+            </div>
+            <div className="field">
               <span>Team</span>
-              <select value={result?.championTeamId ?? ''} onChange={(e) => repo.saveSeasonResult({ ...result, season, championTeamId: e.target.value || undefined })}>
-                <option value="">– noch offen –</option>
-                {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            </label>
+              <TeamSelect title="Team-Weltmeister" teams={teams} value={result?.championTeamId}
+                onChange={(v) => repo.saveSeasonResult({ ...result, season, championTeamId: v })} />
+            </div>
           </Card>
         </>
       )}
-    </div>
+    </section>
+  );
+}
+
+function MySeasonTip({ season, existing, drivers, teams }: {
+  season: number; existing?: SeasonTip; drivers: import('../domain/types').Driver[]; teams: import('../domain/types').Team[];
+}) {
+  const { me } = useMe();
+  const [driverId, setDriverId] = useState(existing?.championDriverId);
+  const [teamId, setTeamId] = useState(existing?.championTeamId);
+  const [state, setState] = useState<'idle' | 'saved' | 'error'>(existing ? 'saved' : 'idle');
+  const [error, setError] = useState('');
+
+  const persist = async (d?: string, t?: string) => {
+    try {
+      await repo.saveSeasonTip({ season, playerId: me, championDriverId: d, championTeamId: t });
+      setState('saved');
+      setError('');
+    } catch (e) {
+      setState('error');
+      setError((e as Error).message);
+    }
+  };
+
+  return (
+    <Card>
+      <div className="row">
+        <h3>Dein Tipp</h3>
+        <SaveState state={state} />
+      </div>
+      <div className="field">
+        <span>Fahrer-Weltmeister</span>
+        <DriverSelect title="Fahrer-Weltmeister" drivers={drivers} teams={teams} value={driverId}
+          onChange={(v) => { setDriverId(v); persist(v, teamId); }} />
+      </div>
+      <div className="field">
+        <span>Team-Weltmeister</span>
+        <TeamSelect title="Team-Weltmeister" teams={teams} value={teamId}
+          onChange={(v) => { setTeamId(v); persist(driverId, v); }} />
+      </div>
+      {error && <p className="error small">{error}</p>}
+    </Card>
   );
 }

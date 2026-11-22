@@ -8,7 +8,6 @@ import { ensureDrivers, syncSeason } from '../data/sync';
 import { RULES } from '../domain/rules';
 import type { Player } from '../domain/types';
 import { fmtDateTime } from '../format';
-import { href } from '../router';
 
 export function MorePage() {
   const season = useSeason();
@@ -18,9 +17,10 @@ export function MorePage() {
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // Namen nur beim ersten Laden übernehmen (danach ist das Formular führend)
   useEffect(() => {
-    if (players) setNames(players);
-  }, [players]);
+    if (players && names.length === 0) setNames(players);
+  }, [players, names.length]);
 
   if (!season || !players) return <p className="muted">Lade…</p>;
 
@@ -39,18 +39,23 @@ export function MorePage() {
       <h1>Mehr</h1>
 
       <Card>
-        <a className="row" href={href('saison')}><h3>🏆 Saisontipps (Weltmeister)</h3><span>›</span></a>
-      </Card>
-
-      <Card>
         <h3>Spieler</h3>
         {names.map((p, i) => (
           <label key={p.id} className="field">
             <span>{i === 0 ? 'Dein Name' : 'Gegner:in'}</span>
-            <input value={p.name} maxLength={16} onChange={(e) => setNames(names.map((n) => (n.id === p.id ? { ...n, name: e.target.value } : n)))} />
+            <input
+              value={p.name}
+              maxLength={16}
+              onChange={(e) => {
+                const next = names.map((n) => (n.id === p.id ? { ...n, name: e.target.value } : n));
+                setNames(next);
+                // Sofort speichern; leere Namen erst beim Verlassen des Feldes ersetzen
+                repo.savePlayers(next.map((n) => ({ ...n, name: n.name.trim() || n.name })));
+              }}
+              onBlur={() => repo.savePlayers(names.map((n, j) => ({ ...n, name: n.name.trim() || `Spieler ${j + 1}` })))}
+            />
           </label>
         ))}
-        <button className="btn" onClick={() => run(async () => { await repo.savePlayers(names.map((n) => ({ ...n, name: n.name.trim() || n.id }))); return 'Namen gespeichert.'; })}>Namen speichern</button>
       </Card>
 
       <Card>
@@ -96,7 +101,7 @@ export function MorePage() {
           <li>Rennen: Top {RULES.tipDepth.race} – zählt doppelt</li>
           <li>{RULES.pointsDriverInTop} Pkt pro Fahrer, der in den Top N landet</li>
           <li>+{RULES.pointsExactPosition} Pkt, wenn die Position exakt stimmt</li>
-          <li>Rennen-Bonus: Schnellste Runde, Driver of the Day, SC/VSC – je +{RULES.bonusPoints.fastestLap}</li>
+          <li>Rennen-Bonus: Schnellste Runde +{RULES.bonusPoints.fastestLap}, Driver of the Day +{RULES.bonusPoints.driverOfTheDay}, SC/VSC +{RULES.bonusPoints.safetyCar}</li>
           <li>Saison: Fahrer- und Team-Weltmeister – je +{RULES.seasonPoints.championDriver}</li>
           <li>Tippschluss = Sessionbeginn. Gegnertipps erst danach sichtbar.</li>
         </ul>

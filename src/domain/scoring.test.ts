@@ -44,10 +44,10 @@ describe('scoreTip', () => {
       tip(['a', 'c'], { fastestLap: 'a', driverOfTheDay: 'b', safetyCar: true }),
       result(top10, { fastestLap: 'a', driverOfTheDay: 'z', safetyCar: true }),
     );
-    // a exakt (3) + c exakt? c ist P3, getippt P2 → 1  => 4 * 2 = 8, Bonus 2+2 = 4
+    // a exakt (3) + c in Top 10 (1) => 4 * 2 = 8; Bonus: schnellste Runde 5 + SC 3 = 8
     expect(s.basePoints).toBe(4);
-    expect(s.bonusPoints).toBe(4);
-    expect(s.total).toBe(12);
+    expect(s.bonusPoints).toBe(8);
+    expect(s.total).toBe(16);
   });
 
   it('SC-Tipp "nein" wird korrekt gewertet', () => {
@@ -62,7 +62,7 @@ describe('scoreTip', () => {
   it('Maximalpunkte', () => {
     expect(maxPoints('quali')).toBe(30);
     expect(maxPoints('sprint')).toBe(24);
-    expect(maxPoints('race')).toBe(66);
+    expect(maxPoints('race')).toBe(78);
   });
 });
 
