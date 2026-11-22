@@ -8,9 +8,11 @@ interface Props {
   value: BonusAnswers;
   disabled?: boolean;
   onChange: (b: BonusAnswers) => void;
+  /** Hinweis auf das verlängerte DotD-Fenster (beim Tippen, nicht beim Ergebnis) */
+  showDotdHint?: boolean;
 }
 
-export function BonusEditor({ drivers, teams, value, disabled, onChange }: Props) {
+export function BonusEditor({ drivers, teams, value, disabled, onChange, showDotdHint }: Props) {
   return (
     <div className="bonus">
       <div className="field">
@@ -25,7 +27,10 @@ export function BonusEditor({ drivers, teams, value, disabled, onChange }: Props
         />
       </div>
       <div className="field">
-        <span>Driver of the Day <small className="muted">+{RULES.bonusPoints.driverOfTheDay}</small></span>
+        <span>
+          Driver of the Day <small className="muted">+{RULES.bonusPoints.driverOfTheDay}</small>
+          {showDotdHint && <small className="muted block">Änderbar bis {RULES.driverOfTheDayWindowMinutes} Min. nach Rennstart</small>}
+        </span>
         <DriverSelect
           title="Driver of the Day"
           drivers={drivers}

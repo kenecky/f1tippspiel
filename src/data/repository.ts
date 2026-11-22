@@ -26,6 +26,8 @@ export interface Repository {
 
   // Tipps
   saveTip(tip: Omit<Tip, 'id' | 'updatedAt'>): Promise<Tip>;
+  /** Driver of the Day separat – erlaubt bis 30 Min. nach Rennstart */
+  saveDriverOfTheDay(sessionId: string, playerId: PlayerId, driverId: string | undefined): Promise<Tip>;
   saveSeasonTip(tip: Omit<SeasonTip, 'id' | 'updatedAt'>): Promise<SeasonTip>;
 
   // Ergebnisse

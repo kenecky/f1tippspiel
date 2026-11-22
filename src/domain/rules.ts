@@ -32,6 +32,9 @@ export const RULES = {
     safetyCar: 3,
   },
 
+  /** Driver of the Day darf bis X Minuten nach Rennstart getippt werden */
+  driverOfTheDayWindowMinutes: 30,
+
   /** Saisontipps */
   seasonPoints: {
     championDriver: 10,

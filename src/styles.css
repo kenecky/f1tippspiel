@@ -279,3 +279,5 @@ body { overflow-x: clip; }
   padding: 12px 14px; border-radius: 12px; background: #2f2f42; border: 1px solid var(--border); text-align: center;
   font-size: 0.9rem; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); animation: fade 0.2s;
 }
+.block { display: block; font-weight: 400; margin-top: 2px; }
+.dotd { border-color: #5a4a14; background: linear-gradient(160deg, #2a2410, var(--surface) 65%); }

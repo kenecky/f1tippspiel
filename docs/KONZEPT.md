@@ -34,6 +34,10 @@ Maximal: Qualifying/Sprint-Qualifying 30 · Sprint 24 · Rennen 60 + 18 Bonus.
 | Driver of the Day  | 10     |
 | Safety Car ja/nein (VSC zählt als SC) | 3 |
 
+**Tippschluss Bonusfragen:** Schnellste Runde und SC/VSC sperren mit dem Rennstart.
+**Driver of the Day** bleibt bis **30 Minuten nach Rennstart** tippbar. So sieht man schon etwas vom Rennen.
+Den Driver-of-the-Day-Tipp der anderen Person sieht man erst nach diesen 30 Minuten.
+
 ### Saisontipps (vor dem ersten Saison-Event)
 
 | Tipp                      | Punkte |
@@ -117,5 +121,6 @@ src/
 ## 7. Branding
 
 - **Arbeitstitel:** Lights Out
-- **Logo:** Startampel mit fünf roten Lichtern, darunter zwei Helme im Duell (rot ↔ türkis = Spielerfarben)
-- Quelle: `assets/logo-mark.svg` → Icons erzeugen mit `npm run icons`
+- **Logo:** „Duell-Linie“: zwei Ideallinien durch eine Kurve in Rot und Türkis (= Spielerfarben), dezente Zielflagge im Hintergrund
+- Quelle: `assets/logo-mark.svg` (Motiv in `<g id="mark">`) → Icons erzeugen mit `npm run icons`
+- Verworfene Entwürfe: `assets/logo-concepts/`

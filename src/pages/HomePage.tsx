@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
-import { Card, Countdown, PlayerDot } from '../components/ui';
+import { Card, Countdown, LockBadge, PlayerDot } from '../components/ui';
+import { driverOfTheDayLockTime, isDriverOfTheDayWindow } from '../domain/lock';
 import { PullToRefresh } from '../components/PullToRefresh';
 import { refreshAll } from '../data/sync';
 import { useNow, useMe } from '../hooks';
@@ -28,6 +29,11 @@ export function HomePage() {
   const next = upcoming[0];
   const tipped = (sessionId: string, p: string) => tips?.some((t) => t.id === `${sessionId}:${p}` && t.order.some(Boolean));
   const name = (id: string) => players.find((p) => p.id === id)?.name ?? id;
+  // Laufendes Rennen: Driver of the Day noch offen?
+  const dotd = races
+    .flatMap((race) => race.sessions.map((session) => ({ race, session })))
+    .find(({ session }) => isDriverOfTheDayWindow(session, now));
+  const dotdTipped = dotd && tips?.some((t) => t.id === `${dotd.session.id}:${me}` && t.bonus?.driverOfTheDay);
   const missing = upcoming.slice(1).filter(({ session }) => !tipped(session.id, me)).slice(0, 3);
 
   return (
@@ -42,6 +48,20 @@ export function HomePage() {
             </div>
           ))}
           <a className="link" href={href('wertung')}>Zur Wertung ›</a>
+        </Card>
+      )}
+
+      {dotd && (
+        <Card className="dotd">
+          <div className="row">
+            <p className="eyebrow">Rennen läuft</p>
+            <LockBadge locked={false} until={driverOfTheDayLockTime(dotd.session).toISOString()} />
+          </div>
+          <h2>{flag(dotd.race.country)} Driver of the Day</h2>
+          <p className="muted small">{dotdTipped ? 'Getippt – du kannst noch ändern.' : 'Noch nicht getippt!'}</p>
+          <a className={`btn ${dotdTipped ? '' : 'primary'}`} href={href('tipp', dotd.session.id)}>
+            {dotdTipped ? 'Tipp ändern' : 'Jetzt tippen'}
+          </a>
         </Card>
       )}
 

@@ -1,3 +1,4 @@
+import { RULES } from './rules';
 import type { Race, Session } from './types';
 
 /**
@@ -6,6 +7,23 @@ import type { Race, Session } from './types';
  */
 export function isSessionLocked(session: Pick<Session, 'start'>, now: Date = new Date()): boolean {
   return now.getTime() >= new Date(session.start).getTime();
+}
+
+/**
+ * Driver of the Day (nur Rennen): tippbar bis 30 Min. nach Rennstart.
+ * Alle anderen Bonusfragen sperren mit dem Rennstart.
+ */
+export function driverOfTheDayLockTime(session: Pick<Session, 'start'>): Date {
+  return new Date(new Date(session.start).getTime() + RULES.driverOfTheDayWindowMinutes * 60_000);
+}
+
+export function isDriverOfTheDayLocked(session: Pick<Session, 'start'>, now: Date = new Date()): boolean {
+  return now.getTime() >= driverOfTheDayLockTime(session).getTime();
+}
+
+/** Rennen läuft, aber Driver of the Day ist noch offen */
+export function isDriverOfTheDayWindow(session: Pick<Session, 'start' | 'type'>, now: Date = new Date()): boolean {
+  return session.type === 'race' && isSessionLocked(session, now) && !isDriverOfTheDayLocked(session, now);
 }
 
 /** Saisontipps sperren mit der ersten Session der Saison */

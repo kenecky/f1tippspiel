@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { BackLink, Card, DriverTag, LockBadge, PlayerDot, SaveState } from '../components/ui';
+import { DriverSelect } from '../components/SheetSelect';
 import { DriverPicker } from '../components/DriverPicker';
 import { BonusEditor } from '../components/BonusEditor';
 import { useAllDrivers, useDrivers, usePlayers, useTeams, useRace, useResult, useTipsForSession } from '../data/queries';
 import { repo } from '../data/localRepository';
-import { isSessionLocked, TipLockedError } from '../domain/lock';
+import { driverOfTheDayLockTime, isDriverOfTheDayWindow, isSessionLocked, TipLockedError } from '../domain/lock';
 import { RULES, SESSION_LABEL } from '../domain/rules';
 import { maxPoints, scoreTip } from '../domain/scoring';
 import type { BonusAnswers, Driver, Team, Tip } from '../domain/types';
@@ -29,6 +30,7 @@ export function TipPage({ sessionId }: { sessionId?: string }) {
   if (!race || !session || !drivers || !allDrivers || !teams || !tips || !players || result === undefined) return <p className="muted">Lade…</p>;
 
   const locked = isSessionLocked(session, now);
+  const dotdOpen = isDriverOfTheDayWindow(session, now);
   const depth = RULES.tipDepth[session.type];
 
   return (
@@ -45,7 +47,19 @@ export function TipPage({ sessionId }: { sessionId?: string }) {
       </p>
 
       {locked ? (
-        <LockedView depth={depth} drivers={allDrivers} tips={tips} players={players} result={result ?? undefined} type={session.type} sessionId={session.id} />
+        <>
+          {dotdOpen && (
+            <DriverOfTheDayCard
+              key={`${session.id}:${me}`}
+              sessionId={session.id}
+              lockAt={driverOfTheDayLockTime(session).toISOString()}
+              drivers={drivers}
+              teams={teams}
+              initial={tips.find((t) => t.playerId === me)?.bonus?.driverOfTheDay}
+            />
+          )}
+          <LockedView depth={depth} drivers={allDrivers} tips={tips} players={players} result={result ?? undefined} type={session.type} sessionId={session.id} dotdOpen={dotdOpen} />
+        </>
       ) : (
         <>
           <TipEditor
@@ -118,6 +132,7 @@ function TipEditor({ sessionId, depth, drivers, teams, existing, withBonus }: {
         <Card>
           <h3>Bonusfragen</h3>
           <BonusEditor
+            showDotdHint
             drivers={drivers}
             teams={teams}
             value={bonus}
@@ -132,10 +147,53 @@ function TipEditor({ sessionId, depth, drivers, teams, existing, withBonus }: {
   );
 }
 
-function LockedView({ depth, drivers, tips, players, result, type, sessionId }: {
+/** Nach Rennstart: Driver of the Day noch 30 Min. tippbar */
+function DriverOfTheDayCard({ sessionId, lockAt, drivers, teams, initial }: {
+  sessionId: string; lockAt: string; drivers: Driver[]; teams: Team[]; initial?: string;
+}) {
+  const { me } = useMe();
+  const [value, setValue] = useState(initial);
+  const [state, setState] = useState<'idle' | 'saved' | 'error'>(initial ? 'saved' : 'idle');
+  const [error, setError] = useState('');
+
+  return (
+    <Card className="dotd">
+      <div className="row">
+        <h3>Driver of the Day <small className="muted">+{RULES.bonusPoints.driverOfTheDay}</small></h3>
+        <LockBadge locked={false} until={lockAt} />
+      </div>
+      <p className="small muted">Das Rennen läuft – den Driver of the Day kannst du noch bis 30 Min. nach dem Start tippen.</p>
+      <DriverSelect
+        title="Driver of the Day"
+        drivers={drivers}
+        teams={teams}
+        value={value}
+        onChange={async (v) => {
+          setValue(v);
+          try {
+            await repo.saveDriverOfTheDay(sessionId, me, v);
+            setState('saved');
+            setError('');
+          } catch (e) {
+            setState('error');
+            setError((e as Error).message);
+          }
+        }}
+      />
+      <div className="row">
+        {error ? <p className="error small">{error}</p> : <span />}
+        <SaveState state={state} />
+      </div>
+    </Card>
+  );
+}
+
+function LockedView({ depth, drivers, tips, players, result, type, sessionId, dotdOpen }: {
   depth: number; drivers: Driver[]; tips: Tip[]; players: { id: 'p1' | 'p2'; name: string }[];
   result?: import('../domain/types').SessionResult; type: import('../domain/types').SessionType; sessionId: string;
+  dotdOpen: boolean;
 }) {
+  const { me } = useMe();
   const byId = new Map(drivers.map((d) => [d.id, d]));
   const actualTop = result?.order.slice(0, depth) ?? [];
   const tipOf = (p: string) => tips.find((t) => t.playerId === p);
@@ -192,6 +250,9 @@ function LockedView({ depth, drivers, tips, players, result, type, sessionId }: 
                   {result && <td>{show(result.bonus)}</td>}
                   {players.map((p) => {
                     const hit = result && scoreTip(type, tipOf(p.id), result).bonusHits[key];
+                    if (key === 'driverOfTheDay' && dotdOpen && p.id !== me) {
+                      return <td key={p.id} className="muted">🔒 verdeckt</td>;
+                    }
                     return <td key={p.id} className={result ? (hit ? 'hit-exact' : 'miss') : ''}>{show(tipOf(p.id)?.bonus)}</td>;
                   })}
                 </tr>

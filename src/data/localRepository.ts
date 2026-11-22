@@ -1,4 +1,4 @@
-import { isSeasonLocked, isSessionLocked, TipLockedError } from '../domain/lock';
+import { isDriverOfTheDayLocked, isSeasonLocked, isSessionLocked, TipLockedError } from '../domain/lock';
 import type { Driver, Player, PlayerId, Race, SeasonResult, SeasonTip, SessionResult, Team, Tip } from '../domain/types';
 import { db } from './db';
 import type { Repository } from './repository';
@@ -68,6 +68,28 @@ export class LocalRepository implements Repository {
       ...input,
       order: [...input.order],
       id: `${input.sessionId}:${input.playerId}`,
+      updatedAt: new Date().toISOString(),
+    };
+    await db.tips.put(tip);
+    return tip;
+  }
+
+  async saveDriverOfTheDay(sessionId: string, playerId: PlayerId, driverId: string | undefined): Promise<Tip> {
+    const session = await findSession(sessionId);
+    if (!session) throw new Error('Session nicht gefunden.');
+    if (session.type !== 'race') throw new Error('Driver of the Day gibt es nur beim Rennen.');
+    // ↓ Später serverseitig mit Serverzeit
+    if (isDriverOfTheDayLocked(session)) {
+      throw new TipLockedError('Driver of the Day ist gesperrt (30 Min. nach Rennstart).');
+    }
+    const id = `${sessionId}:${playerId}`;
+    const existing = await db.tips.get(id);
+    const tip: Tip = {
+      id,
+      sessionId,
+      playerId,
+      order: existing?.order ?? [],
+      bonus: { ...existing?.bonus, driverOfTheDay: driverId },
       updatedAt: new Date().toISOString(),
     };
     await db.tips.put(tip);

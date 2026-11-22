@@ -1,6 +1,6 @@
 import { BackLink, Card, LockBadge, PlayerDot } from '../components/ui';
 import { useAllResults, useAllTips, usePlayers, useRace } from '../data/queries';
-import { isSessionLocked } from '../domain/lock';
+import { isDriverOfTheDayWindow, isSessionLocked } from '../domain/lock';
 import { scoreTip } from '../domain/scoring';
 import { RULES, SESSION_LABEL } from '../domain/rules';
 import { fmtDateTime, flag } from '../format';
@@ -44,7 +44,11 @@ export function RacePage({ raceId }: { raceId?: string }) {
               })}
             </div>
             <div className="actions">
-              <a className={`btn ${locked ? '' : 'primary'}`} href={href('tipp', s.id)}>{locked ? 'Tipps ansehen' : 'Tippen'}</a>
+              {isDriverOfTheDayWindow(s, now) ? (
+                <a className="btn primary" href={href('tipp', s.id)}>Driver of the Day</a>
+              ) : (
+                <a className={`btn ${locked ? '' : 'primary'}`} href={href('tipp', s.id)}>{locked ? 'Tipps ansehen' : 'Tippen'}</a>
+              )}
               {locked && <a className="btn" href={href('ergebnis', s.id)}>{result ? 'Ergebnis' : 'Ergebnis eintragen'}</a>}
             </div>
           </Card>
