@@ -16,8 +16,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Lights Out – F1 Tippspiel',
-        short_name: 'Lights Out',
+        name: 'Undercut – F1 Tippspiel',
+        short_name: 'Undercut',
         description: 'Das F1-Tippduell für zwei.',
         lang: 'de',
         theme_color: '#15151e',

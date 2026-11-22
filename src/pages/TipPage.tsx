@@ -68,26 +68,18 @@ export function TipPage({ sessionId }: { sessionId?: string }) {
             depth={depth}
             drivers={drivers}
             teams={teams}
+            start={session.start}
             existing={tips.find((t) => t.playerId === me)}
             withBonus={session.type === 'race'}
           />
-          <Card>
-            <h3>Gegner</h3>
-            {players.filter((p) => p.id !== me).map((p) => (
-              <p key={p.id}>
-                <PlayerDot id={p.id} /> {p.name}: {tips.some((t) => t.playerId === p.id && t.order.some(Boolean)) ? '✅ hat getippt' : '⏳ noch kein Tipp'}
-                <br /><small className="muted">Tipps werden erst nach Sessionbeginn sichtbar.</small>
-              </p>
-            ))}
-          </Card>
         </>
       )}
     </div>
   );
 }
 
-function TipEditor({ sessionId, depth, drivers, teams, existing, withBonus }: {
-  sessionId: string; depth: number; drivers: Driver[]; teams: Team[]; existing?: Tip; withBonus: boolean;
+function TipEditor({ sessionId, depth, drivers, teams, start, existing, withBonus }: {
+  sessionId: string; depth: number; drivers: Driver[]; teams: Team[]; start: string; existing?: Tip; withBonus: boolean;
 }) {
   const { me } = useMe();
   const [order, setOrder] = useState<string[]>(existing?.order ?? []);
@@ -129,19 +121,42 @@ function TipEditor({ sessionId, depth, drivers, teams, existing, withBonus }: {
         />
       </Card>
       {withBonus && (
-        <Card>
-          <h3>Bonusfragen</h3>
-          <BonusEditor
-            showDotdHint
-            drivers={drivers}
-            teams={teams}
-            value={bonus}
-            onChange={(b) => {
-              setBonus(b);
-              persist(order, b);
-            }}
-          />
-        </Card>
+        <>
+          <Card>
+            <div className="row">
+              <h3>Bonusfragen</h3>
+              <LockBadge locked={false} until={start} />
+            </div>
+            <p className="small muted">Tippschluss mit dem Rennstart.</p>
+            <BonusEditor
+              only={['fastestLap', 'safetyCar']}
+              drivers={drivers}
+              teams={teams}
+              value={bonus}
+              onChange={(b) => {
+                setBonus(b);
+                persist(order, b);
+              }}
+            />
+          </Card>
+          <Card className="dotd">
+            <div className="row">
+              <h3>Driver of the Day <small className="muted">+{RULES.bonusPoints.driverOfTheDay}</small></h3>
+              <LockBadge locked={false} until={driverOfTheDayLockTime({ start }).toISOString()} />
+            </div>
+            <p className="small muted">Tippschluss {RULES.driverOfTheDayWindowMinutes} Min. nach Rennstart – du kannst also noch etwas vom Rennen abwarten.</p>
+            <BonusEditor
+              only={['driverOfTheDay']}
+              drivers={drivers}
+              teams={teams}
+              value={bonus}
+              onChange={(b) => {
+                setBonus(b);
+                persist(order, b);
+              }}
+            />
+          </Card>
+        </>
       )}
     </>
   );

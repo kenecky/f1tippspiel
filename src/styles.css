@@ -37,7 +37,7 @@ p { margin: 0; }
 /* Layout */
 .topbar {
   position: sticky; top: 0; z-index: 10;
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
   padding: calc(env(safe-area-inset-top) + 8px) 16px 8px;
   background: rgba(21, 21, 30, 0.92); backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
@@ -47,7 +47,7 @@ p { margin: 0; }
 .content { padding: 16px 16px calc(var(--nav-h) + 24px + env(safe-area-inset-bottom)); max-width: 640px; margin: 0 auto; }
 .stack { display: flex; flex-direction: column; gap: 14px; }
 .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.offline-banner { background: var(--warn); color: #000; text-align: center; font-size: 0.85rem; padding: 4px; }
+.offline-banner { flex-basis: 100%; margin: 0 -16px -8px; background: var(--warn); color: #000; text-align: center; font-size: 0.85rem; padding: 4px; }
 
 .bottomnav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
@@ -178,17 +178,30 @@ input, select {
 .legend { display: flex; gap: 8px; }
 .legend span { padding: 2px 6px; border-radius: 6px; }
 
-/* Boxenfunk */
-.radio { display: flex; flex-direction: column; gap: 10px; }
-.messages { display: flex; flex-direction: column; gap: 8px; min-height: 40dvh; }
+/* Boxenfunk – feste Fläche zwischen Kopfzeile und Navigation */
+.content.radio-mode {
+  position: fixed; left: 0; right: 0; top: var(--topbar-h, 60px);
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); padding: 0; max-width: none;
+}
+body.keyboard-open .bottomnav { display: none; }
+body.keyboard-open .content.radio-mode { bottom: 0; }
+.radio { height: 100%; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; }
+.radio-head { flex: none; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 12px 16px 8px; border-bottom: 1px solid var(--border); }
+.radio-head h1 { font-size: 1.25rem; }
+.messages { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; position: relative; }
+.messages .empty { margin: auto 0; }
 .bubble { max-width: 82%; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); }
 .bubble .meta { font-size: 0.72rem; color: var(--muted); }
 .bubble.mine { align-self: flex-end; border-bottom-right-radius: 4px; background: var(--surface-2); }
 .bubble.theirs { align-self: flex-start; border-bottom-left-radius: 4px; }
 .bubble.p1 { border-left: 3px solid var(--p1); }
 .bubble.p2 { border-left: 3px solid var(--p2); }
-.quick { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
-.composer { position: sticky; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 8px); display: flex; gap: 8px; }
+.unread-divider { display: flex; align-items: center; gap: 10px; color: var(--accent); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+.unread-divider::before, .unread-divider::after { content: ''; flex: 1; height: 1px; background: var(--accent); opacity: 0.6; }
+.radio-footer { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 10px; border-top: 1px solid var(--border); background: var(--bg); }
+.quick { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+.quick::-webkit-scrollbar { display: none; }
+.composer { display: flex; gap: 8px; }
 
 /* Teamfarben */
 .team-red_bull { --team: #3671c6; }
@@ -281,3 +294,22 @@ body { overflow-x: clip; }
 }
 .block { display: block; font-weight: 400; margin-top: 2px; }
 .dotd { border-color: #5a4a14; background: linear-gradient(160deg, #2a2410, var(--surface) 65%); }
+
+/* Fahrerauswahl: mitlaufende Leiste „Fahrer für P3“ */
+.slots { scroll-margin-top: calc(var(--topbar-h, 60px) + 12px); }
+.pick-area { display: flex; flex-direction: column; gap: 10px; scroll-margin-top: calc(var(--topbar-h, 60px) + 4px); }
+.pick-bar {
+  position: sticky; top: calc(var(--topbar-h, 60px) + 4px); z-index: 4;
+  display: flex; align-items: center; gap: 6px; padding: 6px; margin: 0 -6px;
+  border-radius: 12px; background: rgba(42, 16, 21, 0.96); border: 1px solid var(--accent);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); backdrop-filter: blur(8px);
+}
+.pick-bar .icon-btn { height: 40px; width: 40px; flex: none; border: 0; font-size: 1.4rem; color: var(--text); }
+.pick-bar .icon-btn:disabled { opacity: 0.25; }
+.pick-bar .icon-btn.up { font-size: 1.1rem; background: var(--surface-2); }
+.pick-current { flex: 1; display: flex; align-items: baseline; justify-content: center; gap: 8px; min-width: 0; }
+.pick-label { font-size: 0.85rem; color: var(--muted); }
+.pick-pos { font-size: 1.5rem; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; }
+.pick-replace { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+.bonus.single .field > span { display: none; }
+.readonly { min-height: 44px; display: flex; align-items: center; padding: 0 12px; border-radius: 10px; border: 1px dashed var(--border); color: var(--muted); }

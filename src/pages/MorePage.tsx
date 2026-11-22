@@ -8,6 +8,7 @@ import { ensureDrivers, syncSeason } from '../data/sync';
 import { RULES } from '../domain/rules';
 import type { Player } from '../domain/types';
 import { fmtDateTime } from '../format';
+import { ME } from '../hooks';
 
 export function MorePage() {
   const season = useSeason();
@@ -40,21 +41,32 @@ export function MorePage() {
 
       <Card>
         <h3>Spieler</h3>
-        {names.map((p, i) => (
+        {names.filter((p) => p.id === ME).map((p) => (
           <label key={p.id} className="field">
-            <span>{i === 0 ? 'Dein Name' : 'Gegner:in'}</span>
+            <span>Dein Name</span>
             <input
               value={p.name}
               maxLength={16}
               onChange={(e) => {
                 const next = names.map((n) => (n.id === p.id ? { ...n, name: e.target.value } : n));
                 setNames(next);
-                // Sofort speichern; leere Namen erst beim Verlassen des Feldes ersetzen
-                repo.savePlayers(next.map((n) => ({ ...n, name: n.name.trim() || n.name })));
+                // Sofort speichern; ein leerer Name wird beim Verlassen des Feldes ersetzt
+                repo.savePlayers(next);
               }}
-              onBlur={() => repo.savePlayers(names.map((n, j) => ({ ...n, name: n.name.trim() || `Spieler ${j + 1}` })))}
+              onBlur={() => {
+                const next = names.map((n) => ({ ...n, name: n.name.trim() || 'Spieler 1' }));
+                setNames(next);
+                repo.savePlayers(next);
+              }}
             />
           </label>
+        ))}
+        {names.filter((p) => p.id !== ME).map((p) => (
+          <div key={p.id} className="field">
+            <span>Gegner:in</span>
+            <p className="readonly">{p.name}</p>
+            <small className="muted">Den Namen legt die andere Person selbst fest (ab der Server-Version).</small>
+          </div>
         ))}
       </Card>
 
@@ -106,7 +118,7 @@ export function MorePage() {
           <li>Tippschluss = Sessionbeginn. Gegnertipps erst danach sichtbar.</li>
         </ul>
       </Card>
-      <p className="small muted center">Lights Out v{__APP_VERSION__} · Testphase (lokale Daten)</p>
+      <p className="small muted center">Undercut v{__APP_VERSION__} · Testphase (lokale Daten)</p>
     </div>
   );
 }

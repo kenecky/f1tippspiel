@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ActivePlayerContext, ME, useOnline } from './hooks';
 import { href, useRoute } from './router';
 import { usePlayers, useSeason, useUnreadCount } from './data/queries';
@@ -20,6 +20,18 @@ const DATA_VERSION = 3;
 
 export function App() {
   const me = ME;
+  const topbarRef = useRef<HTMLElement>(null);
+
+  // Höhe der Kopfzeile für sticky Elemente bereitstellen
+  useEffect(() => {
+    const el = topbarRef.current;
+    if (!el) return;
+    const set = () => document.documentElement.style.setProperty('--topbar-h', `${el.offsetHeight}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const route = useRoute();
   const season = useSeason();
   const players = usePlayers();
@@ -67,15 +79,15 @@ export function App() {
 
   return (
     <ActivePlayerContext.Provider value={{ me }}>
-      <header className="topbar">
+      <header className="topbar" ref={topbarRef}>
         <a href={href()} className="brand">
           <img src={logo} alt="" width={32} height={32} />
-          <span>LIGHTS OUT</span>
+          <span>UNDERCUT</span>
         </a>
         <a href={href('mehr')} className={`chip ${me} active`}>{players?.find((p) => p.id === me)?.name ?? ''}</a>
+        {!online && <div className="offline-banner">Offline – gespeicherte Daten werden angezeigt</div>}
       </header>
-      {!online && <div className="offline-banner">Offline – gespeicherte Daten werden angezeigt</div>}
-      <main className="content">{content}</main>
+      <main className={`content ${page === 'funk' ? 'radio-mode' : ''}`}>{content}</main>
       <nav className="bottomnav">
         {nav.map((n) => (
           <a key={n.key} href={href(...(n.key ? [n.key] : []))} className={activeNav === n.key ? 'active' : ''}>

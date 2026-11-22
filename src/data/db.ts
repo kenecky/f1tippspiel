@@ -20,6 +20,7 @@ export class LightsOutDB extends Dexie {
   messages!: EntityTable<Message, 'id'>;
 
   constructor() {
+    // Name bleibt aus Kompatibilität (vorhandene Daten auf den Geräten)
     super('lights-out');
     this.version(1).stores({
       meta: 'key',

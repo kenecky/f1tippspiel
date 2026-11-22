@@ -10,12 +10,15 @@ interface Props {
   onChange: (b: BonusAnswers) => void;
   /** Hinweis auf das verlängerte DotD-Fenster (beim Tippen, nicht beim Ergebnis) */
   showDotdHint?: boolean;
+  /** Nur diese Fragen anzeigen (Standard: alle) */
+  only?: (keyof BonusAnswers)[];
 }
 
-export function BonusEditor({ drivers, teams, value, disabled, onChange, showDotdHint }: Props) {
+export function BonusEditor({ drivers, teams, value, disabled, onChange, showDotdHint, only }: Props) {
+  const show = (k: keyof BonusAnswers) => !only || only.includes(k);
   return (
-    <div className="bonus">
-      <div className="field">
+    <div className={`bonus ${only?.length === 1 ? 'single' : ''}`}>
+      {show('fastestLap') && <div className="field">
         <span>Schnellste Runde <small className="muted">+{RULES.bonusPoints.fastestLap}</small></span>
         <DriverSelect
           title="Schnellste Runde"
@@ -25,8 +28,8 @@ export function BonusEditor({ drivers, teams, value, disabled, onChange, showDot
           disabled={disabled}
           onChange={(v) => onChange({ ...value, fastestLap: v })}
         />
-      </div>
-      <div className="field">
+      </div>}
+      {show('driverOfTheDay') && <div className="field">
         <span>
           Driver of the Day <small className="muted">+{RULES.bonusPoints.driverOfTheDay}</small>
           {showDotdHint && <small className="muted block">Änderbar bis {RULES.driverOfTheDayWindowMinutes} Min. nach Rennstart</small>}
@@ -39,8 +42,8 @@ export function BonusEditor({ drivers, teams, value, disabled, onChange, showDot
           disabled={disabled}
           onChange={(v) => onChange({ ...value, driverOfTheDay: v })}
         />
-      </div>
-      <div className="field">
+      </div>}
+      {show('safetyCar') && <div className="field">
         <span>Safety Car / VSC? <small className="muted">+{RULES.bonusPoints.safetyCar}</small></span>
         <div className="segmented">
           {[true, false].map((v) => (
@@ -55,7 +58,7 @@ export function BonusEditor({ drivers, teams, value, disabled, onChange, showDot
             </button>
           ))}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

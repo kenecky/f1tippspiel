@@ -1,6 +1,6 @@
-# Lights Out – Konzept
+# Undercut – Konzept
 
-> Arbeitstitel. Ein Formel-1-Tippduell für zwei Spieler als installierbare, offline-fähige PWA.
+> Ein Formel-1-Tippduell für zwei Spieler als installierbare, offline-fähige PWA.
 
 ## 1. Ziel
 
@@ -120,7 +120,7 @@ src/
 
 ## 7. Branding
 
-- **Arbeitstitel:** Lights Out
+- **Name:** Undercut (die Boxenstrategie, mit der man den Gegner austrickst)
 - **Logo:** „Duell-Linie“: zwei Ideallinien durch eine Kurve in Rot und Türkis (= Spielerfarben), dezente Zielflagge im Hintergrund
 - Quelle: `assets/logo-mark.svg` (Motiv in `<g id="mark">`) → Icons erzeugen mit `npm run icons`
 - Verworfene Entwürfe: `assets/logo-concepts/`

@@ -1,4 +1,4 @@
-# 🚦 Lights Out – F1 Tippspiel
+# Undercut – F1 Tippspiel
 
 Das Formel-1-Tippduell für zwei. Installierbare PWA, offline-fähig, optimiert für Android/Chrome.
 

@@ -56,6 +56,7 @@ export function DriverPicker({ drivers, teams, value, depth, disabled, onChange 
   const [noAnim, setNoAnim] = useState(false);
 
   const listRef = useRef<HTMLOListElement>(null);
+  const pickRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
   const press = useRef<{ timer: number; x: number; y: number; index: number; pointerId: number; el: HTMLElement } | null>(null);
   const lastClientY = useRef(0);
@@ -226,7 +227,10 @@ export function DriverPicker({ drivers, teams, value, depth, disabled, onChange 
                     suppressClick.current = false;
                     return;
                   }
-                  if (!disabled) setActive(i);
+                  if (disabled) return;
+                  setActive(i);
+                  // Zur Fahrerauswahl scrollen
+                  requestAnimationFrame(() => pickRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
                 }}
               >
                 {id ? <DriverTag driver={byId.get(id)} fallbackId={id} /> : <span className="muted">Fahrer wählen…</span>}
@@ -250,11 +254,29 @@ export function DriverPicker({ drivers, teams, value, depth, disabled, onChange 
           );
         })}
       </ol>
-      {!disabled && <p className="hint small">Gedrückt halten und ziehen, um Plätze zu verschieben.</p>}
-
       {!disabled && (
-        <>
-          <p className="hint">Für <b>P{active + 1}</b> einen Fahrer antippen:</p>
+        <div className="pick-area" ref={pickRef}>
+          <div className="pick-bar">
+            <button type="button" className="icon-btn" aria-label="Vorheriger Platz" disabled={active === 0} onClick={() => setActive(active - 1)}>‹</button>
+            <div className="pick-current">
+              <span className="pick-label">Fahrer für</span>
+              <b className="pick-pos">P{active + 1}</b>
+              {slots[active] && (
+                <span className="pick-replace">
+                  ersetzt <DriverTag compact driver={byId.get(slots[active])} fallbackId={slots[active]} />
+                </span>
+              )}
+            </div>
+            <button type="button" className="icon-btn" aria-label="Nächster Platz" disabled={active === depth - 1} onClick={() => setActive(active + 1)}>›</button>
+            <button
+              type="button"
+              className="icon-btn up"
+              aria-label="Zur Platzierungsliste"
+              onClick={() => listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            >
+              ↑
+            </button>
+          </div>
           <div className="team-groups">
             {groupByTeam(drivers, teams).map((g) => (
               <div key={g.teamId} className="team-group">
@@ -278,7 +300,7 @@ export function DriverPicker({ drivers, teams, value, depth, disabled, onChange 
               </div>
             ))}
           </div>
-        </>
+        </div>
       )}
     </div>
   );
