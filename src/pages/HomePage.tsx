@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { SessionIcon } from '../components/ComicIcon';
 import { Card, Countdown, LockBadge, PlayerDot } from '../components/ui';
 import { driverOfTheDayLockTime, isDriverOfTheDayWindow } from '../domain/lock';
 import { PullToRefresh } from '../components/PullToRefresh';
@@ -69,7 +70,7 @@ export function HomePage() {
         <Card className="next">
           <p className="eyebrow">Nächste Session</p>
           <h2>{flag(next.race.country)} {next.race.name}</h2>
-          <p className="big">{SESSION_LABEL[next.session.type]}</p>
+          <p className="big with-icon"><SessionIcon type={next.session.type} size={30} /> {SESSION_LABEL[next.session.type]}</p>
           <p className="muted">{fmtDateTime(next.session.start)}</p>
           <p className="lights-in">Tippschluss in <Countdown to={next.session.start} /></p>
           <div className="tip-status">
@@ -101,7 +102,7 @@ export function HomePage() {
                   <span className="tile-flag">{flag(race.country)}</span>
                   <span className="tile-text">
                     <b>{race.name}</b>
-                    <small className="muted">{SESSION_LABEL[session.type]} · {fmtDateTime(session.start)}</small>
+                    <small className="muted with-icon"><SessionIcon type={session.type} size={16} /> {SESSION_LABEL[session.type]} · {fmtDateTime(session.start)}</small>
                   </span>
                   <span className="muted">›</span>
                 </a>

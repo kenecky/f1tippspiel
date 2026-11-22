@@ -111,11 +111,11 @@ export function MorePage() {
           <li>Qualifying & Sprint-Qualifying: Top {RULES.tipDepth.quali}</li>
           <li>Sprint: Top {RULES.tipDepth.sprint}</li>
           <li>Rennen: Top {RULES.tipDepth.race} – zählt doppelt</li>
-          <li>{RULES.pointsDriverInTop} Pkt pro Fahrer, der in den Top N landet</li>
-          <li>+{RULES.pointsExactPosition} Pkt, wenn die Position exakt stimmt</li>
+          <li>{RULES.pointsDriverInTop} Punkt pro Fahrer, der in den Top {RULES.tipDepth.sprint} (Sprint) bzw. Top {RULES.tipDepth.quali} (SQ, Q und R) landet.</li>
+          <li>{RULES.pointsExactPosition} weitere Punkte, wenn die Position exakt stimmt</li>
           <li>Rennen-Bonus: Schnellste Runde +{RULES.bonusPoints.fastestLap}, Driver of the Day +{RULES.bonusPoints.driverOfTheDay}, SC/VSC +{RULES.bonusPoints.safetyCar}</li>
-          <li>Saison: Fahrer- und Team-Weltmeister – je +{RULES.seasonPoints.championDriver}</li>
-          <li>Tippschluss = Sessionbeginn. Gegnertipps erst danach sichtbar.</li>
+          <li>Saison: Fahrer- und Team-Weltmeister – je {RULES.seasonPoints.championDriver} Punkte</li>
+          <li>Tippschluss = Sessionbeginn. Nur DOTD = {RULES.driverOfTheDayWindowMinutes} Min. nach Rennstart. Gegnertipps erst nach Tippschluss sichtbar.</li>
         </ul>
       </Card>
       <p className="small muted center">Undercut v{__APP_VERSION__} · Testphase (lokale Daten)</p>

@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { SessionIcon } from '../components/ComicIcon';
 import { BackLink, Card, DriverTag, LockBadge, PlayerDot, SaveState } from '../components/ui';
 import { DriverSelect } from '../components/SheetSelect';
+import { Dialog } from '../components/Dialog';
 import { DriverPicker } from '../components/DriverPicker';
 import { BonusEditor } from '../components/BonusEditor';
 import { useAllDrivers, useDrivers, usePlayers, useTeams, useRace, useResult, useTipsForSession } from '../data/queries';
@@ -22,12 +24,14 @@ export function TipPage({ sessionId }: { sessionId?: string }) {
   const allDrivers = useAllDrivers(race?.season);
   const teams = useTeams(race?.season);
   const tips = useTipsForSession(sessionId);
+  const qualiSessionId = session?.type === 'race' ? race?.sessions.find((x) => x.type === 'quali')?.id : undefined;
+  const qualiTips = useTipsForSession(qualiSessionId);
   const result = useResult(sessionId);
   const players = usePlayers();
   const { me } = useMe();
   const now = useNow(1000);
 
-  if (!race || !session || !drivers || !allDrivers || !teams || !tips || !players || result === undefined) return <p className="muted">Lade…</p>;
+  if (!race || !session || !drivers || !allDrivers || !teams || !tips || !players || result === undefined || (qualiSessionId && !qualiTips)) return <p className="muted">Lade…</p>;
 
   const locked = isSessionLocked(session, now);
   const dotdOpen = isDriverOfTheDayWindow(session, now);
@@ -37,7 +41,7 @@ export function TipPage({ sessionId }: { sessionId?: string }) {
     <div className="stack">
       <BackLink to={href('rennen', race.id)} label={race.name} />
       <div className="row">
-        <h1>{SESSION_LABEL[session.type]}</h1>
+        <h1 className="with-icon"><SessionIcon type={session.type} size={30} /> {SESSION_LABEL[session.type]}</h1>
         <LockBadge locked={locked} until={session.start} />
       </div>
       <p className="muted">{flag(race.country)} {race.name} · {fmtDateTime(session.start)}</p>
@@ -69,6 +73,7 @@ export function TipPage({ sessionId }: { sessionId?: string }) {
             drivers={drivers}
             teams={teams}
             start={session.start}
+            qualiTip={qualiTips?.find((t) => t.playerId === me && t.order.some(Boolean))}
             existing={tips.find((t) => t.playerId === me)}
             withBonus={session.type === 'race'}
           />
@@ -78,11 +83,14 @@ export function TipPage({ sessionId }: { sessionId?: string }) {
   );
 }
 
-function TipEditor({ sessionId, depth, drivers, teams, start, existing, withBonus }: {
+function TipEditor({ sessionId, depth, drivers, teams, start, existing, withBonus, qualiTip }: {
   sessionId: string; depth: number; drivers: Driver[]; teams: Team[]; start: string; existing?: Tip; withBonus: boolean;
+  qualiTip?: Tip;
 }) {
   const { me } = useMe();
   const [order, setOrder] = useState<string[]>(existing?.order ?? []);
+  // Renntipp noch leer und Quali-Tipp vorhanden → Übernahme anbieten
+  const [askCopy, setAskCopy] = useState(() => !!qualiTip && !existing?.order.some(Boolean));
   const [bonus, setBonus] = useState<BonusAnswers>(existing?.bonus ?? {});
   const [state, setState] = useState<'idle' | 'saved' | 'error'>(existing ? 'saved' : 'idle');
   const [error, setError] = useState('');
@@ -100,14 +108,52 @@ function TipEditor({ sessionId, depth, drivers, teams, start, existing, withBonu
   };
 
   const filled = order.filter(Boolean).length;
+  const byId = new Map(drivers.map((d) => [d.id, d]));
+
+  const copyQuali = () => {
+    if (!qualiTip) return;
+    const next = Array.from({ length: depth }, (_, i) => qualiTip.order[i] ?? '');
+    setOrder(next);
+    persist(next, bonus);
+    setAskCopy(false);
+  };
 
   return (
     <>
+      {askCopy && qualiTip && (
+        <Dialog
+          title="Quali-Tipp übernehmen?"
+          onClose={() => setAskCopy(false)}
+          actions={
+            <>
+              <button className="btn" onClick={() => setAskCopy(false)}>Nein, selbst tippen</button>
+              <button className="btn primary" onClick={copyQuali}>Übernehmen</button>
+            </>
+          }
+        >
+          <p className="small muted">
+            {filled > 0 ? 'Dein aktueller Renntipp wird dabei ersetzt. ' : ''}Du kannst danach noch alles ändern.
+          </p>
+          <ol className="dialog-list">
+            {Array.from({ length: depth }, (_, i) => qualiTip.order[i]).map((id, i) => (
+              <li key={i}>
+                <span className="pos">P{i + 1}</span>
+                {id ? <DriverTag driver={byId.get(id)} fallbackId={id} /> : <span className="muted">—</span>}
+              </li>
+            ))}
+          </ol>
+        </Dialog>
+      )}
       <Card>
         <div className="row">
           <h3>Dein Tipp <span className="muted small">{filled}/{depth}</span></h3>
           <SaveState state={state} />
         </div>
+        {qualiTip && (
+          <button type="button" className="btn small-btn" onClick={() => setAskCopy(true)}>
+            ⇩ Quali-Tipp übernehmen
+          </button>
+        )}
         {error && <p className="error small">{error}</p>}
         <DriverPicker
           drivers={drivers}

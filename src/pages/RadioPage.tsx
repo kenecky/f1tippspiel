@@ -62,11 +62,38 @@ export function RadioPage() {
     return () => clearTimeout(t);
   }, [messages, me]);
 
-  // Tastatur offen → Navigation ausblenden
-  const setKeyboard = (open: boolean) => {
-    document.body.classList.toggle('keyboard-open', open);
-  };
-  useEffect(() => () => setKeyboard(false), []);
+  // Tastatur offen → Navigation ausblenden.
+  // Erkennung über die Höhe des sichtbaren Bereichs: Beim Schließen per Zurück-Taste
+  // bleibt das Feld fokussiert, daher reicht focus/blur allein nicht.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    let baseline = vv?.height ?? window.innerHeight;
+    const update = () => {
+      const h = vv?.height ?? window.innerHeight;
+      if (h > baseline) baseline = h;
+      const shrunk = baseline - h > 120;
+      const focused = document.activeElement?.tagName === 'INPUT';
+      document.body.classList.toggle('keyboard-open', shrunk && focused);
+    };
+    const onOrientation = () => {
+      baseline = 0; // nach Drehung neu messen
+      window.setTimeout(update, 300);
+    };
+    vv?.addEventListener('resize', update);
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', onOrientation);
+    document.addEventListener('focusin', update);
+    const onFocusOut = () => window.setTimeout(update, 50);
+    document.addEventListener('focusout', onFocusOut);
+    return () => {
+      vv?.removeEventListener('resize', update);
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', onOrientation);
+      document.removeEventListener('focusin', update);
+      document.removeEventListener('focusout', onFocusOut);
+      document.body.classList.remove('keyboard-open');
+    };
+  }, []);
 
   const name = (id: string) => players?.find((p) => p.id === id)?.name ?? id;
   const send = (t: string) => repo.sendMessage(me, other(me), t);
@@ -108,8 +135,6 @@ export function RadioPage() {
             value={text}
             maxLength={280}
             onChange={(e) => setText(e.target.value)}
-            onFocus={() => setKeyboard(true)}
-            onBlur={() => setKeyboard(false)}
             placeholder={`Funk an ${name(other(me))}…`}
             aria-label="Nachricht"
             enterKeyHint="send"

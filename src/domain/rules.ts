@@ -37,8 +37,8 @@ export const RULES = {
 
   /** Saisontipps */
   seasonPoints: {
-    championDriver: 10,
-    championTeam: 10,
+    championDriver: 30,
+    championTeam: 30,
   },
 } as const;
 

@@ -1,6 +1,10 @@
 import { Card, PlayerDot } from '../components/ui';
 import { usePlayers, useSeason, useStandings } from '../data/queries';
 import { SESSION_SHORT } from '../domain/rules';
+import type { SessionType } from '../domain/types';
+
+/** Einheitliche Spalten für alle Wochenenden */
+const COLUMNS: SessionType[] = ['sprintQuali', 'sprint', 'quali', 'race'];
 import { flag } from '../format';
 import { href } from '../router';
 
@@ -13,6 +17,8 @@ export function StandingsPage() {
   const name = (id: string) => players.find((p) => p.id === id)?.name ?? id;
   const { totals } = standings;
   const leader = totals.p1 === totals.p2 ? null : totals.p1 > totals.p2 ? 'p1' : 'p2';
+
+  const allOfRace = (raceId: string) => standings.sessions.filter((x) => x.race.id === raceId);
 
   // Nach Rennen gruppieren, nur Wochenenden mit Ergebnis
   const byRace = new Map<string, typeof standings.sessions>();
@@ -46,15 +52,24 @@ export function StandingsPage() {
               <h3>{flag(race.country)} {race.name}</h3>
               <span className="muted">›</span>
             </a>
-            <table className="compare">
+            <table className="compare weekend">
               <thead>
-                <tr><th></th>{sessions.map((s) => <th key={s.session.id}>{SESSION_SHORT[s.session.type]}</th>)}<th>Σ</th></tr>
+                <tr>
+                  <th></th>
+                  {COLUMNS.map((t) => <th key={t}>{SESSION_SHORT[t]}</th>)}
+                  <th>Σ</th>
+                </tr>
               </thead>
               <tbody>
                 {(['p1', 'p2'] as const).map((p) => (
                   <tr key={p}>
-                    <td><PlayerDot id={p} /> {name(p)}</td>
-                    {sessions.map((s) => <td key={s.session.id}>{s.scores[p].total}</td>)}
+                    <td className="name"><PlayerDot id={p} /> {name(p)}</td>
+                    {COLUMNS.map((t) => {
+                      const entry = allOfRace(race.id).find((x) => x.session.type === t);
+                      // „–“ = Session gibt es an diesem Wochenende nicht, „…“ = noch kein Ergebnis
+                      const cell = !entry ? '–' : !entry.result ? '…' : String(entry.scores[p].total);
+                      return <td key={t} className={!entry || !entry.result ? 'muted' : ''}>{cell}</td>;
+                    })}
                     <td><b>{sum(p)}</b></td>
                   </tr>
                 ))}

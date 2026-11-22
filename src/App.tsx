@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { ComicIcon, COLORS } from './components/ComicIcon';
 import { ActivePlayerContext, ME, useOnline } from './hooks';
 import { href, useRoute } from './router';
 import { usePlayers, useSeason, useUnreadCount } from './data/queries';
@@ -69,11 +70,11 @@ export function App() {
   }
 
   const nav = [
-    { key: '', label: 'Start', icon: '🏠' },
-    { key: 'kalender', label: 'Tipps', icon: '🏁' },
-    { key: 'wertung', label: 'Wertung', icon: '🏆' },
-    { key: 'funk', label: 'Funk', icon: '📻', badge: unread },
-    { key: 'mehr', label: 'Mehr', icon: '⚙️' },
+    { key: '', label: 'Start', icon: <ComicIcon name="house" color={COLORS.yellow} size={28} /> },
+    { key: 'kalender', label: 'Tipps', icon: <ComicIcon name="flag_checkered" color={COLORS.white} size={28} /> },
+    { key: 'wertung', label: 'Wertung', icon: <ComicIcon name="trophy" color={COLORS.yellow} size={28} /> },
+    { key: 'funk', label: 'Funk', icon: <ComicIcon name="headset" color={COLORS.teal} size={28} />, badge: unread },
+    { key: 'mehr', label: 'Mehr', icon: <ComicIcon name="gear_six" color={COLORS.grey} size={28} /> },
   ];
   const activeNav = ['rennen', 'tipp', 'ergebnis'].includes(page ?? '') ? 'kalender' : page ?? '';
 
@@ -91,7 +92,7 @@ export function App() {
       <nav className="bottomnav">
         {nav.map((n) => (
           <a key={n.key} href={href(...(n.key ? [n.key] : []))} className={activeNav === n.key ? 'active' : ''}>
-            <span className="icon" aria-hidden>{n.icon}</span>
+            <span className="icon">{n.icon}</span>
             <span>{n.label}</span>
             {!!n.badge && <span className="badge">{n.badge}</span>}
           </a>

@@ -30,7 +30,7 @@ export function SeasonTipsSection({ season }: { season: number }) {
   return (
     <section className="stack" id="saisontipps">
       <div className="row">
-        <h2>🏆 Saisontipps</h2>
+        <span className="small muted">Tippschluss mit der ersten Session der Saison</span>
         <LockBadge locked={locked} until={lockAt?.toISOString()} />
       </div>
       <p className="small muted">

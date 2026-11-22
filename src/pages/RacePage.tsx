@@ -1,4 +1,5 @@
 import { BackLink, Card, LockBadge, PlayerDot } from '../components/ui';
+import { SessionIcon } from '../components/ComicIcon';
 import { useAllResults, useAllTips, usePlayers, useRace } from '../data/queries';
 import { isDriverOfTheDayWindow, isSessionLocked } from '../domain/lock';
 import { scoreTip } from '../domain/scoring';
@@ -27,7 +28,7 @@ export function RacePage({ raceId }: { raceId?: string }) {
         return (
           <Card key={s.id}>
             <div className="row">
-              <h3>{SESSION_LABEL[s.type]} <small className="muted">Top {RULES.tipDepth[s.type]}{s.type === 'race' ? ' · x2' : ''}</small></h3>
+              <h3 className="with-icon"><SessionIcon type={s.type} /> {SESSION_LABEL[s.type]} <small className="muted">Top {RULES.tipDepth[s.type]}{s.type === 'race' ? ' · x2' : ''}</small></h3>
               <LockBadge locked={locked} until={s.start} />
             </div>
             <p className="muted">{fmtDateTime(s.start)}</p>
@@ -49,7 +50,7 @@ export function RacePage({ raceId }: { raceId?: string }) {
               ) : (
                 <a className={`btn ${locked ? '' : 'primary'}`} href={href('tipp', s.id)}>{locked ? 'Tipps ansehen' : 'Tippen'}</a>
               )}
-              {locked && <a className="btn" href={href('ergebnis', s.id)}>{result ? 'Ergebnis' : 'Ergebnis eintragen'}</a>}
+              {locked && <a className="btn" href={href('ergebnis', s.id)}>{result ? 'Ergebnis eintragen/ändern' : 'Ergebnis eintragen'}</a>}
             </div>
           </Card>
         );

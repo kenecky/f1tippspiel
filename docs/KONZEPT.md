@@ -42,8 +42,8 @@ Den Driver-of-the-Day-Tipp der anderen Person sieht man erst nach diesen 30 Minu
 
 | Tipp                      | Punkte |
 |---------------------------|---------|
-| Fahrer-Weltmeister        | 10      |
-| Konstrukteurs-Weltmeister | 10      |
+| Fahrer-Weltmeister        | 30     |
+| Konstrukteurs-Weltmeister | 30     |
 
 Alle Punktwerte stehen zentral in `src/domain/rules.ts`.
 
@@ -58,7 +58,9 @@ Alle Punktwerte stehen zentral in `src/domain/rules.ts`.
 ## 3. Funktionen
 
 - **Start:** Punktestand, nächste Session mit Countdown, Tippstatus beider Spieler; Aktualisieren durch Runterwischen (nur hier, nur im oberen Drittel)
-- **Tipps:** Saison mit allen Wochenenden, Sprint-Wochenenden markiert, unten die Saisontipps
+- **Tipps:** kommende Wochenenden, abgeschlossene Rennen und Saisontipps in zugeklappten Bereichen
+- **Renntipp:** Gibt es schon einen Quali-Tipp, wird angeboten, ihn zu übernehmen (Dialog mit Vorschau)
+- **Icons:** Comic-Stil auf Basis von Phosphor Icons (MIT, siehe `licenses/`)
 - **Tippen:** Plätze antippen und Fahrer wählen (nur Stammfahrer, nach Team-WM sortiert, zweispaltig je Team); Plätze per Drag & Drop (lange drücken) verschieben
 - **Auto-Save:** Alle Eingaben werden sofort gespeichert, es gibt keine Speichern-Buttons, Teamfarben, Bonusfragen beim Rennen
 - **Auswertung:** Vergleich Ergebnis ↔ Tipp A ↔ Tipp B, Punkte pro Session

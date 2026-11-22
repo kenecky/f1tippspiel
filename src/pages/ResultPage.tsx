@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SessionIcon } from '../components/ComicIcon';
 import { BackLink, Card, SaveState } from '../components/ui';
 import { DriverPicker } from '../components/DriverPicker';
 import { BonusEditor } from '../components/BonusEditor';
@@ -28,7 +29,7 @@ export function ResultPage({ sessionId }: { sessionId?: string }) {
   return (
     <div className="stack">
       <BackLink to={href('tipp', session.id)} label="Tipps" />
-      <h1>Ergebnis · {SESSION_LABEL[session.type]}</h1>
+      <h1 className="with-icon"><SessionIcon type={session.type} size={28} /> Ergebnis · {SESSION_LABEL[session.type]}</h1>
       <p className="muted">{race.name} · {fmtDateTime(session.start)}</p>
       {!started ? (
         <Card><p>Die Session hat noch nicht begonnen.</p></Card>
