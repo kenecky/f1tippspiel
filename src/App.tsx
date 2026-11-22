@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { ComicIcon, COLORS } from './components/ComicIcon';
 import { SWIPE_ORDER, useSwipeNav } from './components/useSwipeNav';
-import { ActivePlayerContext, ME, useOnline } from './hooks';
+import { ActivePlayerContext, ME, PageActiveContext, useOnline } from './hooks';
 import { href, useRoute } from './router';
 import { usePlayers, useSeason, useUnreadCount } from './data/queries';
 import { syncSeason, ensureDrivers } from './data/sync';
@@ -60,18 +60,43 @@ export function App() {
   const mainRef = useRef<HTMLElement>(null);
   const isTopLevel = SWIPE_ORDER.includes(page ?? '') && params.length === 0;
   useSwipeNav(mainRef, page ?? '', isTopLevel);
-  let content;
-  switch (page ?? '') {
-    case '': content = <HomePage />; break;
-    case 'kalender': content = <CalendarPage />; break;
-    case 'rennen': content = <RacePage raceId={params[0]} />; break;
-    case 'tipp': content = <TipPage sessionId={params[0]} />; break;
-    case 'ergebnis': content = <ResultPage sessionId={params[0]} />; break;
-    case 'wertung': content = <StandingsPage />; break;
-    case 'funk': content = <RadioPage />; break;
-    case 'mehr': content = <MorePage />; break;
-    default: content = <HomePage />;
+  const renderPage = (key: string) => {
+    switch (key) {
+      case '': return <HomePage />;
+      case 'kalender': return <CalendarPage />;
+      case 'rennen': return <RacePage raceId={params[0]} />;
+      case 'tipp': return <TipPage sessionId={params[0]} />;
+      case 'ergebnis': return <ResultPage sessionId={params[0]} />;
+      case 'wertung': return <StandingsPage />;
+      case 'funk': return <RadioPage />;
+      case 'mehr': return <MorePage />;
+      default: return <HomePage />;
+    }
+  };
+
+  // Hauptseiten: Nachbarn links/rechts vorab rendern (unsichtbar), damit sie beim
+  // Wischen sofort da sind. Keys = Seitenname → beim Wechsel kein Neuaufbau.
+  const pages: { key: string; role: 'prev' | 'current' | 'next' }[] = [];
+  if (isTopLevel) {
+    const i = SWIPE_ORDER.indexOf(page ?? '');
+    if (i > 0) pages.push({ key: SWIPE_ORDER[i - 1], role: 'prev' });
+    pages.push({ key: page ?? '', role: 'current' });
+    if (i < SWIPE_ORDER.length - 1) pages.push({ key: SWIPE_ORDER[i + 1], role: 'next' });
   }
+  const content = isTopLevel ? (
+    pages.map(({ key, role }) => (
+      <div
+        key={`top:${key}`}
+        className={`page ${role === 'current' ? 'current' : `peek peek-${role}`} ${key === 'funk' ? 'radio-page' : ''}`}
+        aria-hidden={role !== 'current'}
+        inert={role !== 'current' ? true : undefined}
+      >
+        <PageActiveContext.Provider value={role === 'current'}>{renderPage(key)}</PageActiveContext.Provider>
+      </div>
+    ))
+  ) : (
+    <div key={`sub:${route.join('/')}`} className="page current">{renderPage(page ?? '')}</div>
+  );
 
   const nav = [
     { key: '', label: 'Start', icon: <ComicIcon name="house" color={COLORS.yellow} size={28} /> },

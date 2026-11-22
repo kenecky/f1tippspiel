@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { usePageActive } from '../hooks';
 
 const THRESHOLD = 80; // px (gedämpft) bis zum Auslösen
 const MAX_PULL = 120;
@@ -17,8 +18,10 @@ export function PullToRefresh({ onRefresh }: { onRefresh: () => Promise<string |
   const pullRef = useRef(0);
   const busyRef = useRef(false);
   const lastLit = useRef(0);
+  const active = usePageActive();
 
   useEffect(() => {
+    if (!active) return; // Nachbarseite beim Wischen: nicht reagieren
     const onStart = (e: TouchEvent) => {
       if (busyRef.current || window.scrollY > 0 || e.touches.length !== 1) return;
       const y = e.touches[0].clientY;
@@ -80,7 +83,7 @@ export function PullToRefresh({ onRefresh }: { onRefresh: () => Promise<string |
       window.removeEventListener('touchend', onEnd);
       window.removeEventListener('touchcancel', onEnd);
     };
-  }, [onRefresh]);
+  }, [onRefresh, active]);
 
   const lit = busy ? 5 : Math.min(5, Math.floor((pull / THRESHOLD) * 5));
   const height = busy ? 56 : pull;

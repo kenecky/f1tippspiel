@@ -3,7 +3,7 @@ import { PlayerDot } from '../components/ui';
 import { useMessages, usePlayers } from '../data/queries';
 import { repo } from '../data/localRepository';
 import { fmtDateTime } from '../format';
-import { other, useMe } from '../hooks';
+import { other, useMe, usePageActive } from '../hooks';
 
 const QUICK = ['Box, box! 📻', 'Copy that 👍', 'Push now! 🔥', 'Wir prüfen das… 🧐', 'Lights out and away we go! 🚦', 'Ich bin schneller 😏'];
 
@@ -15,23 +15,37 @@ export function RadioPage() {
   const messages = useMessages();
   const players = usePlayers();
   const { me } = useMe();
+  const active = usePageActive();
   const [text, setText] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [firstUnreadId, setFirstUnreadId] = useState<number | null | undefined>(undefined);
   const lastCount = useRef(0);
   const [spacer, setSpacer] = useState(0);
 
-  // Einmalig beim ersten Laden: erste ungelesene Nachricht merken
+  // Beim (Wieder-)Sichtbarwerden: erste ungelesene Nachricht merken und neu ausrichten
   useEffect(() => {
-    if (!messages || firstUnreadId !== undefined) return;
+    if (!active) {
+      setFirstUnreadId(undefined);
+      lastCount.current = 0;
+      setSpacer(0);
+    }
+  }, [active]);
+
+  useEffect(() => {
+    if (!active || !messages || firstUnreadId !== undefined) return;
     const first = messages.find((m) => m.to === me && !m.readAt);
     setFirstUnreadId(first?.id ?? null);
-  }, [messages, firstUnreadId, me]);
+  }, [messages, firstUnreadId, me, active]);
 
   // Scrollposition setzen
   useLayoutEffect(() => {
     const box = scrollRef.current;
-    if (!box || !messages || firstUnreadId === undefined) return;
+    if (!box || !messages) return;
+    if (firstUnreadId === undefined) {
+      // Als Nachbarseite: unten (neueste Nachrichten) zeigen
+      if (!active) box.scrollTop = box.scrollHeight;
+      return;
+    }
     if (lastCount.current === 0) {
       const target = firstUnreadId != null ? box.querySelector<HTMLElement>(`[data-unread-anchor]`) : null;
       if (target) {
@@ -53,19 +67,20 @@ export function RadioPage() {
       if (nearBottom || messages.at(-1)?.from === me) box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
     }
     lastCount.current = messages.length;
-  }, [messages, firstUnreadId, me, spacer]);
+  }, [messages, firstUnreadId, me, spacer, active]);
 
   // Als gelesen markieren (kurz verzögert, damit der Trenner sichtbar bleibt)
   useEffect(() => {
-    if (!messages?.some((m) => m.to === me && !m.readAt)) return;
+    if (!active || !messages?.some((m) => m.to === me && !m.readAt)) return;
     const t = window.setTimeout(() => repo.markMessagesRead(me), 1200);
     return () => clearTimeout(t);
-  }, [messages, me]);
+  }, [messages, me, active]);
 
   // Tastatur offen → Navigation ausblenden.
   // Erkennung über die Höhe des sichtbaren Bereichs: Beim Schließen per Zurück-Taste
   // bleibt das Feld fokussiert, daher reicht focus/blur allein nicht.
   useEffect(() => {
+    if (!active) return;
     const vv = window.visualViewport;
     let baseline = vv?.height ?? window.innerHeight;
     const update = () => {
@@ -93,7 +108,7 @@ export function RadioPage() {
       document.removeEventListener('focusout', onFocusOut);
       document.body.classList.remove('keyboard-open');
     };
-  }, []);
+  }, [active]);
 
   const name = (id: string) => players?.find((p) => p.id === id)?.name ?? id;
   const send = (t: string) => repo.sendMessage(me, other(me), t);

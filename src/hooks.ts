@@ -37,3 +37,10 @@ export function useOnline(): boolean {
   }, []);
   return online;
 }
+
+/**
+ * Ist diese Seite gerade die sichtbare? Nachbarseiten werden fürs Wischen
+ * vorab gerendert und dürfen keine Nebenwirkungen auslösen.
+ */
+export const PageActiveContext = createContext(true);
+export const usePageActive = () => useContext(PageActiveContext);

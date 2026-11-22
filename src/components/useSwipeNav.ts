@@ -7,20 +7,21 @@ export const SWIPE_ORDER = ['', 'kalender', 'wertung', 'funk', 'mehr'];
 const LOCK_DISTANCE = 10; // px bis die Richtung feststeht
 const COMMIT_RATIO = 0.25; // Anteil der Breite, ab dem gewechselt wird
 const COMMIT_VELOCITY = 0.35; // px/ms – schneller Wisch reicht auch
-const OUT_MS = 170;
-const IN_MS = 260;
 const EASE = 'cubic-bezier(0.22, 0.8, 0.2, 1)';
 
 /** Bereiche, in denen horizontales Wischen etwas anderes bedeutet */
-const IGNORE = '[data-no-swipe], input, textarea, select, .quick, .slot, .sheet, .dialog, .sheet-backdrop, .dialog-backdrop';
+const IGNORE =
+  '[data-no-swipe], input, textarea, select, .quick, .slot, .sheet, .dialog, .sheet-backdrop, .dialog-backdrop';
 
 /**
- * Wischen nach links/rechts wechselt zwischen den Hauptseiten.
- * Die Seite folgt dem Finger; beim Wechsel gleitet die alte raus und die neue herein.
- * Animation direkt über style.transform (kein React-Render pro Bewegung).
+ * Karussell zwischen den Hauptseiten.
+ * Die Nachbarseiten sind bereits gerendert (.peek.prev / .peek.next) und liegen
+ * links/rechts neben der aktuellen Seite. Beim Wischen wird der ganze Streifen
+ * (main) verschoben – die Nachbarseite ist sofort sichtbar.
+ * Animation direkt über style.transform, ohne React-Render pro Bewegung.
  */
 export function useSwipeNav(ref: RefObject<HTMLElement | null>, page: string, isTopLevel: boolean) {
-  const enterFrom = useRef<number>(0); // -1 = von links, 1 = von rechts, 0 = keine Animation
+  const committed = useRef(false);
   const state = useRef({ isTopLevel, index: SWIPE_ORDER.indexOf(page) });
   state.current = { isTopLevel, index: SWIPE_ORDER.indexOf(page) };
 
@@ -36,6 +37,14 @@ export function useSwipeNav(ref: RefObject<HTMLElement | null>, page: string, is
       el.style.transition = transition;
       el.style.transform = x ? `translate3d(${x}px,0,0)` : '';
     };
+
+    /** Nachbarseiten auf Höhe des sichtbaren Bereichs einblenden */
+    const showPeeks = () => {
+      const top = el.classList.contains('radio-mode') ? 0 : window.scrollY;
+      el.style.setProperty('--peek-y', `${top}px`);
+      el.classList.add('swiping');
+    };
+    const hidePeeks = () => el.classList.remove('swiping');
 
     const onStart = (e: TouchEvent) => {
       tracking = false;
@@ -62,6 +71,7 @@ export function useSwipeNav(ref: RefObject<HTMLElement | null>, page: string, is
           return;
         }
         x0 = e.touches[0].clientX; // ohne Sprung starten
+        showPeeks();
       }
       if (e.cancelable) e.preventDefault();
       const raw = e.touches[0].clientX - x0;
@@ -86,16 +96,22 @@ export function useSwipeNav(ref: RefObject<HTMLElement | null>, page: string, is
 
       if (!valid || !far) {
         setX(0, `transform 220ms ${EASE}`);
+        window.setTimeout(() => {
+          if (!tracking) hidePeeks();
+        }, 230);
         return;
       }
       busy = true;
       navigator.vibrate?.(8);
-      setX(-dir * width, `transform ${OUT_MS}ms ${EASE}`);
+      // Restweg proportional animieren – schneller Wisch = kurze Animation
+      const remaining = width - Math.abs(dx);
+      const ms = Math.round(Math.min(260, Math.max(120, (remaining / width) * 300)));
+      setX(-dir * width, `transform ${ms}ms ${EASE}`);
       window.setTimeout(() => {
-        enterFrom.current = dir;
+        committed.current = true;
         navigate(...(SWIPE_ORDER[target] ? [SWIPE_ORDER[target]] : []));
         busy = false;
-      }, OUT_MS);
+      }, ms);
     };
 
     // Auf dem ganzen Fenster lauschen – auch unterhalb kurzer Seiten wischbar
@@ -111,28 +127,17 @@ export function useSwipeNav(ref: RefObject<HTMLElement | null>, page: string, is
     };
   }, [ref]);
 
-  // Neue Seite gleitet herein
+  // Nach dem Wechsel: Streifen zurücksetzen – noch vor dem Zeichnen, damit nichts springt.
+  // Die bisherige Nachbarseite ist jetzt die aktuelle (gleiches Element, kein Neuaufbau).
   useLayoutEffect(() => {
     const el = ref.current;
-    const dir = enterFrom.current;
     if (!el) return;
-    if (!dir) {
-      el.style.transition = '';
-      el.style.transform = '';
-      return;
-    }
-    enterFrom.current = 0;
-    const width = el.offsetWidth || window.innerWidth;
     el.style.transition = 'none';
-    el.style.transform = `translate3d(${dir * width * 0.35}px,0,0)`;
-    el.style.opacity = '0.4';
-    void el.offsetWidth; // Startzustand übernehmen
-    el.style.transition = `transform ${IN_MS}ms ${EASE}, opacity ${IN_MS}ms ease-out`;
     el.style.transform = '';
-    el.style.opacity = '';
-    const t = window.setTimeout(() => {
-      el.style.transition = ''; // kein dauerhaftes transform (stört position: fixed)
-    }, IN_MS);
-    return () => clearTimeout(t);
+    el.classList.remove('swiping');
+    if (committed.current) {
+      committed.current = false;
+      window.scrollTo(0, 0);
+    }
   }, [page, ref]);
 }
