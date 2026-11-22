@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ComicIcon, COLORS } from './components/ComicIcon';
+import { SWIPE_ORDER, useSwipeNav } from './components/useSwipeNav';
 import { ActivePlayerContext, ME, useOnline } from './hooks';
 import { href, useRoute } from './router';
 import { usePlayers, useSeason, useUnreadCount } from './data/queries';
@@ -56,6 +57,9 @@ export function App() {
   }, [season]);
 
   const [page, ...params] = route;
+  const mainRef = useRef<HTMLElement>(null);
+  const isTopLevel = SWIPE_ORDER.includes(page ?? '') && params.length === 0;
+  useSwipeNav(mainRef, page ?? '', isTopLevel);
   let content;
   switch (page ?? '') {
     case '': content = <HomePage />; break;
@@ -88,7 +92,7 @@ export function App() {
         <a href={href('mehr')} className={`chip ${me} active`}>{players?.find((p) => p.id === me)?.name ?? ''}</a>
         {!online && <div className="offline-banner">Offline – gespeicherte Daten werden angezeigt</div>}
       </header>
-      <main className={`content ${page === 'funk' ? 'radio-mode' : ''}`}>{content}</main>
+      <main ref={mainRef} className={`content ${page === 'funk' ? 'radio-mode' : ''}`}>{content}</main>
       <nav className="bottomnav">
         {nav.map((n) => (
           <a key={n.key} href={href(...(n.key ? [n.key] : []))} className={activeNav === n.key ? 'active' : ''}>

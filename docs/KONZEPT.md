@@ -68,7 +68,7 @@ Alle Punktwerte stehen zentral in `src/domain/rules.ts`.
 - **Boxenfunk:** kurze Nachrichten an die andere Person, inkl. Schnellfunk-Buttons
 - **Offline:** App-Shell über den Service Worker, Daten in IndexedDB
 
-- **Bedienung:** Kein Zoom, kein natives Pull-to-Refresh
+- **Bedienung:** Kein Zoom, kein natives Pull-to-Refresh; Wischen links/rechts wechselt zwischen den Hauptmenüpunkten; Auswahlmenüs lassen sich nach unten wegwischen
 
 ## 4. Daten
 

@@ -43,7 +43,12 @@ export function PlayerDot({ id }: { id: PlayerId }) {
 }
 
 export function BackLink({ to, label = 'Zurück' }: { to: string; label?: string }) {
-  return <a className="back" href={to}>‹ {label}</a>;
+  return (
+    <a className="back" href={to} role="button">
+      <span className="arrow" aria-hidden>‹</span>
+      {label}
+    </a>
+  );
 }
 
 export function sortDrivers<T extends Driver>(drivers: T[]): T[] {

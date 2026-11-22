@@ -13,6 +13,7 @@ export function PullToRefresh({ onRefresh }: { onRefresh: () => Promise<string |
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState('');
   const start = useRef<number | null>(null);
+  const startX = useRef(0);
   const pullRef = useRef(0);
   const busyRef = useRef(false);
   const lastLit = useRef(0);
@@ -23,11 +24,18 @@ export function PullToRefresh({ onRefresh }: { onRefresh: () => Promise<string |
       const y = e.touches[0].clientY;
       if (y > window.innerHeight / 3) return;
       start.current = y;
+      startX.current = e.touches[0].clientX;
       lastLit.current = 0;
     };
     const onMove = (e: TouchEvent) => {
       if (start.current === null) return;
       const raw = e.touches[0].clientY - start.current;
+      const sideways = Math.abs(e.touches[0].clientX - startX.current);
+      // Horizontales Wischen (Seitenwechsel) → kein Pull-to-Refresh
+      if (pullRef.current === 0 && sideways > 10 && sideways > raw) {
+        start.current = null;
+        return;
+      }
       if (raw <= 0 || window.scrollY > 0) {
         pullRef.current = 0;
         setPull(0);
